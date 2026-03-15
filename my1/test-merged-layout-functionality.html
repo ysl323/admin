@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试合并布局功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #f0f9ff; color: #67c23a; border: 1px solid #b3e19d; }
+        .error { background-color: #fef0f0; color: #f56c6c; border: 1px solid #f5b2b2; }
+        .info { background-color: #f4f4f5; color: #909399; border: 1px solid #d3d4d6; }
+        button {
+            background-color: #409eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #66b1ff; }
+        .test-results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>合并布局功能测试</h1>
+    
+    <div class="test-section">
+        <h2>服务状态检查</h2>
+        <div id="service-status">
+            <div class="info">正在检查服务状态...</div>
+        </div>
+        <button onclick="checkServices()">重新检查服务</button>
+    </div>
+
+    <div class="test-section">
+        <h2>前端页面测试</h2>
+        <div id="frontend-status">
+            <div class="info">准备测试前端页面...</div>
+        </div>
+        <button onclick="testFrontend()">测试前端页面</button>
+        <button onclick="openLearningPage()">打开学习页面</button>
+    </div>
+
+    <div class="test-section">
+        <h2>API 端点测试</h2>
+        <div id="api-status">
+            <div class="info">准备测试API端点...</div>
+        </div>
+        <button onclick="testAPI()">测试API</button>
+    </div>
+
+    <div class="test-section">
+        <h2>布局验证</h2>
+        <div id="layout-status">
+            <div class="info">布局合并已完成，包含以下改进：</div>
+            <ul>
+                <li>学习模式选择器和进度显示合并为一行</li>
+                <li>使用 2:1 的 flex 比例分配空间</li>
+                <li>响应式设计，移动端自动垂直堆叠</li>
+                <li>保持所有原有功能</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-results" id="test-results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        const FRONTEND_BASE = 'http://localhost:5173';
+
+        async function checkServices() {
+            const statusDiv = document.getElementById('service-status');
+            statusDiv.innerHTML = '<div class="info">检查中...</div>';
+
+            try {
+                // 检查后端
+                const backendResponse = await fetch(`${API_BASE}/health`);
+                const backendOk = backendResponse.ok;
+
+                // 检查前端
+                const frontendResponse = await fetch(FRONTEND_BASE);
+                const frontendOk = frontendResponse.ok;
+
+                let html = '';
+                if (backendOk) {
+                    html += '<div class="success">✅ 后端服务正常 (localhost:3000)</div>';
+                } else {
+                    html += '<div class="error">❌ 后端服务异常</div>';
+                }
+
+                if (frontendOk) {
+                    html += '<div class="success">✅ 前端服务正常 (localhost:5173)</div>';
+                } else {
+                    html += '<div class="error">❌ 前端服务异常</div>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ 服务检查失败: ${error.message}</div>`;
+            }
+        }
+
+        async function testFrontend() {
+            const statusDiv = document.getElementById('frontend-status');
+            statusDiv.innerHTML = '<div class="info">测试中...</div>';
+
+            try {
+                const response = await fetch(FRONTEND_BASE);
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ 前端页面可访问</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ 前端页面访问失败</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ 前端测试失败: ${error.message}</div>`;
+            }
+        }
+
+        async function testAPI() {
+            const statusDiv = document.getElementById('api-status');
+            statusDiv.innerHTML = '<div class="info">测试中...</div>';
+
+            try {
+                // 测试健康检查
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                let html = '';
+
+                if (healthResponse.ok) {
+                    html += '<div class="success">✅ 健康检查通过</div>';
+                } else {
+                    html += '<div class="error">❌ 健康检查失败</div>';
+                }
+
+                // 测试分类API
+                try {
+                    const categoriesResponse = await fetch(`${API_BASE}/categories`);
+                    if (categoriesResponse.ok) {
+                        html += '<div class="success">✅ 分类API正常</div>';
+                    } else {
+                        html += '<div class="error">❌ 分类API异常</div>';
+                    }
+                } catch (e) {
+                    html += '<div class="error">❌ 分类API测试失败</div>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ API测试失败: ${error.message}</div>`;
+            }
+        }
+
+        function openLearningPage() {
+            // 打开学习页面（假设有课程ID为1）
+            window.open(`${FRONTEND_BASE}/#/learning/1`, '_blank');
+        }
+
+        // 页面加载时自动检查服务
+        window.onload = function() {
+            checkServices();
+        };
+    </script>
+</body>
+</html>

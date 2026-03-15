@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实线下划线测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f5f5f5;
+    }
+    
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      color: #303133;
+      margin-bottom: 40px;
+    }
+    
+    .test-section {
+      margin-bottom: 40px;
+    }
+    
+    .test-section h2 {
+      color: #606266;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    
+    .input-demo {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    
+    /* 实线下划线输入框样式 */
+    .solid-underline-input {
+      border: none;
+      border-bottom: 2px solid #409eff;
+      outline: none;
+      font-size: 32px;
+      text-align: center;
+      padding: 10px 5px;
+      background: transparent;
+      color: #303133;
+      font-weight: 500;
+      letter-spacing: 2px;
+      transition: all 0.3s;
+      min-width: 150px;
+    }
+    
+    .solid-underline-input:focus {
+      border-bottom-color: #66b1ff;
+      box-shadow: none;
+    }
+    
+    .solid-underline-input:disabled {
+      color: #909399;
+      border-bottom-color: #dcdfe6;
+      cursor: not-allowed;
+    }
+    
+    .solid-underline-input.error {
+      color: #f56c6c;
+      border-bottom-color: #f56c6c;
+      animation: shake 0.5s;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .description {
+      text-align: center;
+      color: #909399;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    
+    .success {
+      color: #67c23a;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>✅ 实线下划线修复测试</h1>
+    
+    <div class="test-section">
+      <h2>1. 单个单词输入（短单词）</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 150px;"
+          placeholder="cat"
+          value=""
+        />
+      </div>
+      <p class="description">目标单词长度: 3个字母 (cat)</p>
+    </div>
+    
+    <div class="test-section">
+      <h2>2. 单个单词输入（中等长度）</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 240px;"
+          placeholder="hello"
+          value=""
+        />
+      </div>
+      <p class="description">目标单词长度: 5个字母 (hello)</p>
+    </div>
+    
+    <div class="test-section">
+      <h2>3. 单个单词输入（长单词）</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 330px;"
+          placeholder="beautiful"
+          value=""
+        />
+      </div>
+      <p class="description">目标单词长度: 9个字母 (beautiful)</p>
+    </div>
+    
+    <div class="test-section">
+      <h2>4. 多单词输入</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 150px;"
+          placeholder="good"
+          value=""
+        />
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 180px;"
+          placeholder="morning"
+          value=""
+        />
+      </div>
+      <p class="description">目标短语: "good morning" (两个单词)</p>
+    </div>
+    
+    <div class="test-section">
+      <h2>5. 错误状态（红色下划线）</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input error" 
+          style="width: 150px;"
+          value="wrng"
+        />
+      </div>
+      <p class="description">错误输入会显示红色下划线并抖动</p>
+    </div>
+    
+    <div class="test-section">
+      <h2>6. 禁用状态</h2>
+      <div class="input-demo">
+        <input 
+          type="text" 
+          class="solid-underline-input" 
+          style="width: 150px;"
+          value="hello"
+          disabled
+        />
+      </div>
+      <p class="description">答对后输入框会被禁用</p>
+    </div>
+    
+    <div class="test-section" style="margin-top: 60px; padding: 20px; background: #f0f9ff; border-radius: 8px;">
+      <h2 class="success">✅ 修复说明</h2>
+      <ul style="color: #606266; line-height: 1.8;">
+        <li><strong>使用 CSS border-bottom</strong>：每个输入框下方显示一条连续的实线</li>
+        <li><strong>不再使用下划线字符</strong>：移除了所有 "_" 字符的占位符</li>
+        <li><strong>动态宽度</strong>：根据目标单词长度自动调整输入框宽度</li>
+        <li><strong>蓝色实线</strong>：默认显示 #409eff 颜色的实线</li>
+        <li><strong>聚焦效果</strong>：聚焦时实线变为浅蓝色 #66b1ff</li>
+        <li><strong>错误状态</strong>：错误时实线变为红色 #f56c6c</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // 添加错误动画演示
+    document.querySelectorAll('.solid-underline-input.error').forEach(input => {
+      input.addEventListener('click', () => {
+        input.classList.remove('error');
+        setTimeout(() => {
+          input.classList.add('error');
+        }, 10);
+      });
+    });
+  </script>
+</body>
+</html>

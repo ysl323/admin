@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试Placeholder逻辑</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .test-case {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    
+    .word-input-container {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0px;
+      margin: 10px;
+    }
+    
+    .underline-input {
+      border: none;
+      outline: none;
+      font-size: 32px;
+      text-align: center;
+      padding: 15px 10px;
+      background: transparent;
+      color: #303133;
+      font-weight: 500;
+      letter-spacing: 2px;
+      border-bottom: 2px solid #ccc;
+    }
+    
+    .underline-placeholder {
+      color: #409eff;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      text-align: center;
+      min-height: 40px;
+      line-height: 40px;
+    }
+    
+    .info {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>测试Placeholder逻辑</h1>
+  
+  <div class="test-case">
+    <h3>测试1: 目标单词 "hello" (5个字母)</h3>
+    <div class="word-input-container">
+      <input type="text" class="underline-input" id="input1" value="" placeholder="输入单词">
+      <div class="underline-placeholder" id="placeholder1">_____</div>
+    </div>
+    <div class="info" id="info1"></div>
+  </div>
+  
+  <div class="test-case">
+    <h3>测试2: 目标单词 "world" (5个字母)</h3>
+    <div class="word-input-container">
+      <input type="text" class="underline-input" id="input2" value="" placeholder="输入单词">
+      <div class="underline-placeholder" id="placeholder2">_____</div>
+    </div>
+    <div class="info" id="info2"></div>
+  </div>
+  
+  <div class="test-case">
+    <h3>测试3: 多单词 "hello world"</h3>
+    <div>
+      <div class="word-input-container">
+        <input type="text" class="underline-input" id="input3a" value="" placeholder="第一个单词">
+        <div class="underline-placeholder" id="placeholder3a">_____</div>
+      </div>
+      <div class="word-input-container">
+        <input type="text" class="underline-input" id="input3b" value="" placeholder="第二个单词">
+        <div class="underline-placeholder" id="placeholder3b">_____</div>
+      </div>
+    </div>
+    <div class="info" id="info3"></div>
+  </div>
+
+  <script>
+    // 模拟Vue的computed逻辑
+    function updatePlaceholder(inputId, placeholderId, targetWord, infoId) {
+      const input = document.getElementById(inputId);
+      const placeholder = document.getElementById(placeholderId);
+      const info = document.getElementById(infoId);
+      
+      input.addEventListener('input', () => {
+        const currentLength = input.value.length;
+        const targetLength = targetWord.length;
+        const remainingLength = Math.max(targetLength - currentLength, 0);
+        const underscores = '_'.repeat(remainingLength);
+        
+        placeholder.textContent = underscores;
+        
+        info.innerHTML = `
+          当前输入: "${input.value}" (${currentLength}个字符)<br>
+          目标单词: "${targetWord}" (${targetLength}个字符)<br>
+          剩余长度: ${remainingLength}<br>
+          下划线: "${underscores}" (${underscores.length}个字符)
+        `;
+      });
+      
+      // 初始化
+      input.dispatchEvent(new Event('input'));
+    }
+    
+    updatePlaceholder('input1', 'placeholder1', 'hello', 'info1');
+    updatePlaceholder('input2', 'placeholder2', 'world', 'info2');
+    updatePlaceholder('input3a', 'placeholder3a', 'hello', 'info3');
+    updatePlaceholder('input3b', 'placeholder3b', 'world', 'info3');
+  </script>
+</body>
+</html>

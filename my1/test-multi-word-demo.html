@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多单词输入功能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .demo-section {
+            margin-bottom: 40px;
+        }
+
+        .demo-title {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .chinese-hint {
+            text-align: center;
+            font-size: 24px;
+            color: #606266;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 10px;
+        }
+
+        .multi-word-input {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .underline-input {
+            border: none;
+            border-bottom: 3px solid #409eff;
+            outline: none;
+            font-size: 32px;
+            text-align: center;
+            padding: 15px 10px;
+            background: transparent;
+            color: #303133;
+            font-weight: 500;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            min-width: 60px;
+        }
+
+        .underline-input:focus {
+            border-bottom-color: #66b1ff;
+            box-shadow: 0 2px 8px rgba(102, 177, 255, 0.3);
+        }
+
+        .underline-input:disabled {
+            border-bottom-color: #dcdfe6;
+            color: #909399;
+            cursor: not-allowed;
+        }
+
+        .underline-input.error {
+            border-bottom-color: #f56c6c;
+            animation: shake 0.5s;
+        }
+
+        .underline-input.correct {
+            border-bottom-color: #67c23a;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .feedback {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feedback.show {
+            opacity: 1;
+        }
+
+        .feedback.correct {
+            background-color: #f0f9ff;
+            color: #67c23a;
+        }
+
+        .feedback.wrong {
+            background-color: #fef0f0;
+            color: #f56c6c;
+        }
+
+        .instructions {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            list-style-position: inside;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+
+        .btn-secondary {
+            background: #e4e7ed;
+            color: #606266;
+        }
+
+        .btn-secondary:hover {
+            background: #d3d6dd;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            color: #909399;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 多单词输入功能演示</h1>
+        <p class="subtitle">Multi-Word Input Feature Demo</p>
+
+        <!-- Demo 1: Two Words -->
+        <div class="demo-section">
+            <div class="demo-title">演示 1: 两个单词 (hello world)</div>
+            <div class="chinese-hint">你好 世界</div>
+            <div class="multi-word-input">
+                <input 
+                    type="text" 
+                    class="underline-input" 
+                    id="word1-1"
+                    placeholder="_____"
+                    style="width: 120px;"
+                >
+                <input 
+                    type="text" 
+                    class="underline-input" 
+                    id="word1-2"
+                    placeholder="_____"
+                    style="width: 120px;"
+                    disabled
+                >
+            </div>
+            <div class="feedback" id="feedback1"></div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="checkDemo1()">验证</button>
+                <button class="btn-secondary" onclick="resetDemo1()">重置</button>
+            </div>
+            <div class="status" id="status1">请输入第一个单词，然后按空格或点击验证</div>
+        </div>
+
+        <!-- Demo 2: Three Words -->
+        <div class="demo-section">
+            <div class="demo-title">演示 2: 三个单词 (good morning everyone)</div>
+            <div class="chinese-hint">早上好 大家</div>
+            <div class="multi-word-input">
+                <input 
+                    type="text" 
+                    class="underline-input" 
+                    id="word2-1"
+                    placeholder="____"
+                    style="width: 100px;"
+                >
+                <input 
+                    type="text" 
+                    class="underline-input" 
+                    id="word2-2"
+                    placeholder="_______"
+                    style="width: 140px;"
+                    disabled
+                >
+                <input 
+                    type="text" 
+                    class="underline-input" 
+                    id="word2-3"
+                    placeholder="________"
+                    style="width: 160px;"
+                    disabled
+                >
+            </div>
+            <div class="feedback" id="feedback2"></div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="checkDemo2()">验证</button>
+                <button class="btn-secondary" onclick="resetDemo2()">重置</button>
+            </div>
+            <div class="status" id="status2">请输入第一个单词，然后按空格或点击验证</div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3>📖 使用说明</h3>
+            <ul>
+                <li>输入完一个单词后按<strong>空格键</strong>或点击<strong>验证按钮</strong></li>
+                <li>如果输入正确，会自动聚焦到下一个输入框</li>
+                <li>如果输入错误，会显示红色下划线和抖动动画</li>
+                <li>错误时输入框会清空，需要重新输入</li>
+                <li>所有单词输入正确后会显示成功提示</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Demo 1: hello world
+        let demo1CurrentIndex = 0;
+        const demo1Words = ['hello', 'world'];
+
+        document.getElementById('word1-1').addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                checkDemo1();
+            }
+        });
+
+        document.getElementById('word1-2').addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                checkDemo1();
+            }
+        });
+
+        function checkDemo1() {
+            const input = document.getElementById(`word1-${demo1CurrentIndex + 1}`);
+            const value = input.value.trim().toLowerCase();
+            const expected = demo1Words[demo1CurrentIndex];
+            const feedback = document.getElementById('feedback1');
+            const status = document.getElementById('status1');
+
+            if (!value) {
+                showFeedback(feedback, '请输入单词', 'wrong');
+                return;
+            }
+
+            if (value === expected) {
+                // Correct
+                input.classList.add('correct');
+                input.disabled = true;
+                
+                if (demo1CurrentIndex < demo1Words.length - 1) {
+                    // Move to next word
+                    demo1CurrentIndex++;
+                    const nextInput = document.getElementById(`word1-${demo1CurrentIndex + 1}`);
+                    nextInput.disabled = false;
+                    nextInput.focus();
+                    status.textContent = `正确！请输入第 ${demo1CurrentIndex + 1} 个单词`;
+                    showFeedback(feedback, '✓ 正确！继续下一个', 'correct');
+                } else {
+                    // All words complete
+                    status.textContent = '🎉 完成！所有单词都正确！';
+                    showFeedback(feedback, '🎉 完成！所有单词都正确！', 'correct');
+                }
+            } else {
+                // Wrong
+                input.classList.add('error');
+                showFeedback(feedback, '✗ 错误，请重新输入', 'wrong');
+                status.textContent = '输入错误，请重新输入';
+                
+                setTimeout(() => {
+                    input.value = '';
+                    input.classList.remove('error');
+                    input.focus();
+                }, 1000);
+            }
+        }
+
+        function resetDemo1() {
+            demo1CurrentIndex = 0;
+            document.getElementById('word1-1').value = '';
+            document.getElementById('word1-1').disabled = false;
+            document.getElementById('word1-1').classList.remove('correct', 'error');
+            document.getElementById('word1-2').value = '';
+            document.getElementById('word1-2').disabled = true;
+            document.getElementById('word1-2').classList.remove('correct', 'error');
+            document.getElementById('feedback1').classList.remove('show');
+            document.getElementById('status1').textContent = '请输入第一个单词，然后按空格或点击验证';
+            document.getElementById('word1-1').focus();
+        }
+
+        // Demo 2: good morning everyone
+        let demo2CurrentIndex = 0;
+        const demo2Words = ['good', 'morning', 'everyone'];
+
+        document.getElementById('word2-1').addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                checkDemo2();
+            }
+        });
+
+        document.getElementById('word2-2').addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                checkDemo2();
+            }
+        });
+
+        document.getElementById('word2-3').addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                checkDemo2();
+            }
+        });
+
+        function checkDemo2() {
+            const input = document.getElementById(`word2-${demo2CurrentIndex + 1}`);
+            const value = input.value.trim().toLowerCase();
+            const expected = demo2Words[demo2CurrentIndex];
+            const feedback = document.getElementById('feedback2');
+            const status = document.getElementById('status2');
+
+            if (!value) {
+                showFeedback(feedback, '请输入单词', 'wrong');
+                return;
+            }
+
+            if (value === expected) {
+                // Correct
+                input.classList.add('correct');
+                input.disabled = true;
+                
+                if (demo2CurrentIndex < demo2Words.length - 1) {
+                    // Move to next word
+                    demo2CurrentIndex++;
+                    const nextInput = document.getElementById(`word2-${demo2CurrentIndex + 1}`);
+                    nextInput.disabled = false;
+                    nextInput.focus();
+                    status.textContent = `正确！请输入第 ${demo2CurrentIndex + 1} 个单词`;
+                    showFeedback(feedback, '✓ 正确！继续下一个', 'correct');
+                } else {
+                    // All words complete
+                    status.textContent = '🎉 完成！所有单词都正确！';
+                    showFeedback(feedback, '🎉 完成！所有单词都正确！', 'correct');
+                }
+            } else {
+                // Wrong
+                input.classList.add('error');
+                showFeedback(feedback, '✗ 错误，请重新输入', 'wrong');
+                status.textContent = '输入错误，请重新输入';
+                
+                setTimeout(() => {
+                    input.value = '';
+                    input.classList.remove('error');
+                    input.focus();
+                }, 1000);
+            }
+        }
+
+        function resetDemo2() {
+            demo2CurrentIndex = 0;
+            for (let i = 1; i <= 3; i++) {
+                const input = document.getElementById(`word2-${i}`);
+                input.value = '';
+                input.disabled = i !== 1;
+                input.classList.remove('correct', 'error');
+            }
+            document.getElementById('feedback2').classList.remove('show');
+            document.getElementById('status2').textContent = '请输入第一个单词，然后按空格或点击验证';
+            document.getElementById('word2-1').focus();
+        }
+
+        function showFeedback(element, message, type) {
+            element.textContent = message;
+            element.className = `feedback ${type} show`;
+            
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 2000);
+        }
+
+        // Auto focus on first input
+        window.onload = () => {
+            document.getElementById('word1-1').focus();
+        };
+    </script>
+</body>
+</html>
