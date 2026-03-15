@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录调试测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>登录调试测试</h1>
+    
+    <!-- 测试后端直连 -->
+    <div class="test-section">
+        <h3>1. 测试后端直连 (localhost:3000)</h3>
+        <button onclick="testBackendDirect()">测试后端健康检查</button>
+        <button onclick="testBackendLogin()">测试后端登录</button>
+        <div id="backendResult" class="result"></div>
+    </div>
+
+    <!-- 测试前端代理 -->
+    <div class="test-section">
+        <h3>2. 测试前端代理 (localhost:5173)</h3>
+        <button onclick="testProxyHealth()">测试代理健康检查</button>
+        <button onclick="testProxyLogin()">测试代理登录</button>
+        <div id="proxyResult" class="result"></div>
+    </div>
+
+    <!-- 登录表单测试 -->
+    <div class="test-section">
+        <h3>3. 登录表单测试</h3>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名:</label>
+                <input type="text" id="username" name="username" value="admin">
+            </div>
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" name="password" value="admin123">
+            </div>
+            <button type="submit">登录</button>
+            <button type="button" onclick="checkAuthStatus()">检查认证状态</button>
+            <button type="button" onclick="logout()">退出登录</button>
+        </form>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <script>
+        // 显示结果的辅助函数
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        // 1. 测试后端直连
+        async function testBackendDirect() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                showResult('backendResult', `✅ 后端连接成功\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('backendResult', `❌ 后端连接失败\n${error.message}`, 'error');
+            }
+        }
+
+        async function testBackendLogin() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('backendResult', `✅ 后端登录成功\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('backendResult', `❌ 后端登录失败\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('backendResult', `❌ 后端登录请求失败\n${error.message}`, 'error');
+            }
+        }
+
+        // 2. 测试前端代理
+        async function testProxyHealth() {
+            try {
+                const response = await fetch('/api/../health');
+                const data = await response.json();
+                showResult('proxyResult', `✅ 代理连接成功\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                showResult('proxyResult', `❌ 代理连接失败\n${error.message}`, 'error');
+            }
+        }
+
+        async function testProxyLogin() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('proxyResult', `✅ 代理登录成功\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('proxyResult', `❌ 代理登录失败\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('proxyResult', `❌ 代理登录请求失败\n${error.message}`, 'error');
+            }
+        }
+
+        // 3. 登录表单
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('loginResult', `✅ 登录成功！\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('loginResult', `❌ 登录失败\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ 登录请求失败\n${error.message}`, 'error');
+            }
+        });
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/check', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                showResult('loginResult', `认证状态检查结果:\n${JSON.stringify(data, null, 2)}`, 'info');
+            } catch (error) {
+                showResult('loginResult', `❌ 认证状态检查失败\n${error.message}`, 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                showResult('loginResult', `退出登录结果:\n${JSON.stringify(data, null, 2)}`, 'info');
+            } catch (error) {
+                showResult('loginResult', `❌ 退出登录失败\n${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动测试
+        window.onload = function() {
+            testBackendDirect();
+            testProxyHealth();
+        };
+    </script>
+</body>
+</html>

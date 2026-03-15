@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试合并后的学习页面布局</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+        }
+        .test-title {
+            color: #409eff;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #409eff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .test-link:hover {
+            background-color: #66b1ff;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .status.success {
+            background-color: #f0f9ff;
+            color: #67c23a;
+            border: 1px solid #b3e19d;
+        }
+        .status.info {
+            background-color: #ecf5ff;
+            color: #409eff;
+            border: 1px solid #b3d8ff;
+        }
+        .layout-demo {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            padding: 15px;
+            border: 2px dashed #409eff;
+            border-radius: 8px;
+        }
+        .demo-left {
+            flex: 2;
+            background: #ecf5ff;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .demo-right {
+            flex: 1;
+            background: #f0f9ff;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .layout-demo {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>学习模式和进度显示合并布局测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">✅ 布局合并完成</div>
+            <div class="status success">已将学习模式选择卡片和进度显示卡片合并为一行</div>
+            <p><strong>更改内容:</strong></p>
+            <ul>
+                <li>将两个独立的 el-card 合并为一个</li>
+                <li>使用 flexbox 实现水平布局</li>
+                <li>学习模式区域占 2/3 空间 (flex: 2)</li>
+                <li>进度显示区域占 1/3 空间 (flex: 1)</li>
+                <li>添加了响应式设计，移动端垂直堆叠</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📐 布局比例演示</div>
+            <div class="layout-demo">
+                <div class="demo-left">
+                    <strong>学习模式选择区域</strong><br>
+                    (flex: 2 - 占 2/3 宽度)<br>
+                    包含4个模式按钮
+                </div>
+                <div class="demo-right">
+                    <strong>进度显示区域</strong><br>
+                    (flex: 1 - 占 1/3 宽度)<br>
+                    显示学习统计
+                </div>
+            </div>
+            <p><small>💡 在移动端 (≤768px) 时，会自动切换为垂直堆叠布局</small></p>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔧 技术实现</div>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace;">
+                <strong>HTML结构:</strong><br>
+                &lt;el-card class="mode-progress-combined-card"&gt;<br>
+                &nbsp;&nbsp;&lt;div class="mode-progress-row"&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;div class="mode-section"&gt;学习模式选择&lt;/div&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;div class="progress-section"&gt;进度显示&lt;/div&gt;<br>
+                &nbsp;&nbsp;&lt;/div&gt;<br>
+                &lt;/el-card&gt;<br><br>
+                
+                <strong>CSS样式:</strong><br>
+                .mode-progress-row { display: flex; gap: 20px; }<br>
+                .mode-section { flex: 2; }<br>
+                .progress-section { flex: 1; }
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📱 响应式设计</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <h4>桌面端 (>768px):</h4>
+                    <ul>
+                        <li>水平排列</li>
+                        <li>2:1 比例分配</li>
+                        <li>20px 间距</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>移动端 (≤768px):</h4>
+                    <ul>
+                        <li>垂直堆叠</li>
+                        <li>15px 间距</li>
+                        <li>全宽显示</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔗 测试链接</div>
+            <a href="http://localhost:5173" class="test-link" target="_blank">查看实际效果</a>
+            <a href="http://localhost:5173/categories" class="test-link" target="_blank">进入学习页面</a>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">✨ 优势</div>
+            <ul>
+                <li><strong>节省空间</strong>: 减少了一个卡片的垂直空间占用</li>
+                <li><strong>视觉统一</strong>: 相关功能在同一个卡片中，逻辑更清晰</li>
+                <li><strong>响应式友好</strong>: 移动端自动适配为垂直布局</li>
+                <li><strong>比例合理</strong>: 2:1 的比例分配符合内容重要性</li>
+                <li><strong>保持功能</strong>: 所有原有功能完全保留</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">⚠️ 测试说明</div>
+            <p>要测试合并后的布局效果:</p>
+            <ol>
+                <li>访问 <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+                <li>登录系统 (admin / admin123)</li>
+                <li>进入任意学习分类和课程</li>
+                <li>观察学习模式选择和进度显示是否在同一行</li>
+                <li>调整浏览器窗口大小测试响应式效果</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 检查当前窗口宽度并显示布局状态
+        function checkLayout() {
+            const width = window.innerWidth;
+            const layoutStatus = width <= 768 ? '移动端布局 (垂直堆叠)' : '桌面端布局 (水平排列)';
+            console.log(`当前窗口宽度: ${width}px - ${layoutStatus}`);
+        }
+        
+        checkLayout();
+        window.addEventListener('resize', checkLayout);
+    </script>
+</body>
+</html>

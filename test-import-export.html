@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试导入导出功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #409EFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #f0f9ff;
+            color: #409EFF;
+            border: 1px solid #409EFF;
+        }
+        .error {
+            background: #fef0f0;
+            color: #f56c6c;
+            border: 1px solid #f56c6c;
+        }
+        .info {
+            background: #f4f4f5;
+            color: #909399;
+            border: 1px solid #dcdfe6;
+        }
+    </style>
+</head>
+<body>
+    <h1>📥📤 导入导出功能测试</h1>
+
+    <!-- 登录测试 -->
+    <div class="test-section">
+        <h2>1. 登录</h2>
+        <button onclick="testLogin()">测试登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <!-- 导入测试 -->
+    <div class="test-section">
+        <h2>2. 测试导入</h2>
+        <textarea id="importData">[
+  {
+    "lesson": 1,
+    "question": 1,
+    "english": "hello",
+    "chinese": "你好"
+  },
+  {
+    "lesson": 1,
+    "question": 2,
+    "english": "world",
+    "chinese": "世界"
+  }
+]</textarea>
+        <input type="text" id="categoryName" placeholder="分类名称（如：测试分类）" style="width: 300px; padding: 10px; margin-bottom: 10px;">
+        <button onclick="testImport()">开始导入</button>
+        <div id="importResult" class="result"></div>
+    </div>
+
+    <!-- 导出测试 -->
+    <div class="test-section">
+        <h2>3. 测试导出</h2>
+        <button onclick="testExportAll()">导出所有数据</button>
+        <button onclick="testExportCategory()">导出指定分类</button>
+        <button onclick="testExportLesson()">导出指定课程</button>
+        <div id="exportResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://47.97.185.117/api';
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在登录...';
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✓ 登录成功\n用户: ' + data.user.username;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '✗ 登录失败: ' + data.message;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ 登录失败: ' + error.message;
+            }
+        }
+
+        async function testImport() {
+            const resultDiv = document.getElementById('importResult');
+            const dataInput = document.getElementById('importData');
+            const categoryNameInput = document.getElementById('categoryName');
+            
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在导入...';
+
+            try {
+                const data = JSON.parse(dataInput.value);
+                const categoryName = categoryNameInput.value || '测试分类';
+
+                const response = await fetch(`${API_BASE}/admin/import-simple-lesson`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: data,
+                        categoryName: categoryName
+                    }),
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✓ 导入成功
+分类: ${result.category}
+课程数: ${result.lessonsCreated}
+单词数: ${result.totalWords}
+格式: ${result.hasLessonField ? '按课时分组' : '全部内容'}
+详细信息: ${JSON.stringify(result.lessons, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '✗ 导入失败: ' + result.message;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ 导入失败: ' + error.message;
+            }
+        }
+
+        async function testExportAll() {
+            const resultDiv = document.getElementById('exportResult');
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在导出...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/export/all`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✓ 导出成功
+分类数: ${result.stats.categories}
+课程数: ${result.stats.lessons}
+单词数: ${result.stats.words}
+
+前3条数据预览:
+${JSON.stringify(result.data.slice(0, 3), null, 2)}`;
+
+                    // 下载文件
+                    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `course-export-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '✗ 导出失败: ' + result.message;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ 导出失败: ' + error.message;
+            }
+        }
+
+        async function testExportCategory() {
+            const resultDiv = document.getElementById('exportResult');
+            const categoryId = prompt('请输入分类ID:');
+            
+            if (!categoryId) return;
+
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在导出...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/export/category/${categoryId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✓ 导出成功
+分类: ${result.stats.categoryName}
+课程数: ${result.stats.lessons}
+单词数: ${result.stats.words}
+
+数据预览:
+${JSON.stringify(result.data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '✗ 导出失败: ' + result.message;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ 导出失败: ' + error.message;
+            }
+        }
+
+        async function testExportLesson() {
+            const resultDiv = document.getElementById('exportResult');
+            const lessonId = prompt('请输入课程ID:');
+            
+            if (!lessonId) return;
+
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在导出...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/export/lesson/${lessonId}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✓ 导出成功
+分类: ${result.stats.categoryName}
+课程: 第${result.stats.lessonNumber}课
+单词数: ${result.stats.words}
+
+数据预览:
+${JSON.stringify(result.data.slice(0, 5), null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '✗ 导出失败: ' + result.message;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '✗ 导出失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

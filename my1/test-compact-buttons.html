@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Single-Row Buttons Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .control-buttons-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            padding: 8px 0;
+            overflow-x: auto;
+        }
+        
+        .el-button {
+            min-width: 80px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            background: white;
+            color: #606266;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .el-button:hover {
+            border-color: #409eff;
+            color: #409eff;
+        }
+        
+        .el-button.primary {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+        
+        .el-button.primary:hover {
+            background: #66b1ff;
+            border-color: #66b1ff;
+        }
+        
+        .el-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .el-icon {
+            font-size: 14px;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .old-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 10px 0;
+        }
+        
+        .old-buttons .el-button {
+            min-width: 120px;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+        
+        .info {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #409eff;
+        }
+        
+        .success {
+            background: #f0f9ff;
+            color: #67c23a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .control-buttons {
+                gap: 6px;
+                padding: 6px 0;
+            }
+            
+            .control-buttons .el-button {
+                min-width: 70px;
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .control-buttons .el-button {
+                min-width: 60px;
+                padding: 6px 8px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>紧凑单行按钮布局测试</h1>
+        
+        <div class="info">
+            <strong>优化目标:</strong> 将6个控制按钮做小并排列成一行，提高空间利用率
+        </div>
+        
+        <h2>新版紧凑单行布局</h2>
+        <div class="control-buttons-card">
+            <div class="control-buttons">
+                <button class="el-button">
+                    <span class="el-icon">←</span>
+                    返回课程列表
+                </button>
+                <button class="el-button">
+                    <span class="el-icon">‹</span>
+                    上一题
+                </button>
+                <button class="el-button primary">
+                    <span class="el-icon">▶</span>
+                    播放发音
+                </button>
+                <button class="el-button">
+                    <span class="el-icon">👁</span>
+                    显示答案
+                </button>
+                <button class="el-button">
+                    <span class="el-icon">↻</span>
+                    重新开始
+                </button>
+                <button class="el-button">
+                    下一题
+                    <span class="el-icon">›</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="success">
+            ✅ 新布局特点: 按钮更小(80px宽度)，单行排列，间距紧凑(8px)，支持水平滚动
+        </div>
+        
+        <div class="comparison">
+            <div>
+                <h3>原版布局 (较大按钮)</h3>
+                <div class="control-buttons-card">
+                    <div class="old-buttons">
+                        <button class="el-button">
+                            <span class="el-icon">←</span>
+                            返回课程列表
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">‹</span>
+                            上一题
+                        </button>
+                        <button class="el-button primary">
+                            <span class="el-icon">▶</span>
+                            播放发音
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">👁</span>
+                            显示答案
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">↻</span>
+                            重新开始
+                        </button>
+                        <button class="el-button">
+                            下一题
+                            <span class="el-icon">›</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3>新版布局 (紧凑按钮)</h3>
+                <div class="control-buttons-card">
+                    <div class="control-buttons">
+                        <button class="el-button">
+                            <span class="el-icon">←</span>
+                            返回课程列表
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">‹</span>
+                            上一题
+                        </button>
+                        <button class="el-button primary">
+                            <span class="el-icon">▶</span>
+                            播放发音
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">👁</span>
+                            显示答案
+                        </button>
+                        <button class="el-button">
+                            <span class="el-icon">↻</span>
+                            重新开始
+                        </button>
+                        <button class="el-button">
+                            下一题
+                            <span class="el-icon">›</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>优化详情</h3>
+        <ul>
+            <li><strong>按钮宽度:</strong> 从120px减少到80px (减少33%)</li>
+            <li><strong>内边距:</strong> 从12px 20px减少到8px 12px</li>
+            <li><strong>字体大小:</strong> 从14px减少到12px</li>
+            <li><strong>间距:</strong> 从15px减少到8px</li>
+            <li><strong>布局:</strong> 强制单行显示，禁止换行</li>
+            <li><strong>滚动:</strong> 小屏幕上支持水平滚动</li>
+        </ul>
+        
+        <h3>响应式测试</h3>
+        <p>请调整浏览器窗口大小测试响应式行为：</p>
+        <ul>
+            <li><strong>桌面端 (>768px):</strong> 按钮80px宽度，12px字体</li>
+            <li><strong>平板端 (≤768px):</strong> 按钮70px宽度，11px字体</li>
+            <li><strong>手机端 (≤480px):</strong> 按钮60px宽度，10px字体</li>
+        </ul>
+        
+        <div class="info">
+            <strong>验证要点:</strong>
+            <br>1. 所有6个按钮在一行显示
+            <br>2. 按钮尺寸明显减小
+            <br>3. 间距紧凑但不拥挤
+            <br>4. 小屏幕上可水平滚动
+            <br>5. 保持良好的可点击性
+        </div>
+    </div>
+</body>
+</html>

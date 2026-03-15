@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多单词验证逻辑修复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .problem-demo {
+            background: #fef0f0;
+            border: 2px solid #f56c6c;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .solution-demo {
+            background: #f0f9ff;
+            border: 2px solid #67c23a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .word-input-demo {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .word-input {
+            border: none;
+            border-bottom: 3px solid #409eff;
+            outline: none;
+            font-size: 24px;
+            text-align: center;
+            padding: 8px;
+            background: transparent;
+            color: #303133;
+            font-weight: 600;
+            min-width: 120px;
+        }
+        
+        .word-input.correct {
+            border-bottom-color: #67c23a;
+            background: #f0f9ff;
+        }
+        
+        .word-input.error {
+            border-bottom-color: #f56c6c;
+            background: #fef0f0;
+            animation: shake 0.6s ease-in-out;
+        }
+        
+        .word-input.cleared {
+            border-bottom-color: #dcdfe6;
+            background: #f5f7fa;
+            color: #c0c4cc;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        
+        .feedback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+        
+        .feedback.wrong {
+            background: #fef0f0;
+            color: #f56c6c;
+            border: 2px solid #f5b2b2;
+        }
+        
+        .feedback.correct {
+            background: #f0f9ff;
+            color: #67c23a;
+            border: 2px solid #b3e19d;
+        }
+        
+        .info {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #409eff;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .demo-button {
+            background: #409eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 5px;
+        }
+        
+        .demo-button:hover {
+            background: #66b1ff;
+        }
+        
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>多单词验证逻辑修复</h1>
+        
+        <div class="info">
+            <strong>问题描述:</strong> 用户反馈当多个单词中有一个错误时，系统会清空所有单词输入，这个逻辑不合理。
+        </div>
+        
+        <h2>问题演示</h2>
+        <div class="problem-demo">
+            <h3>❌ 修复前的错误逻辑</h3>
+            <p><strong>场景:</strong> 用户输入 4 个单词，其中 1 个错误</p>
+            
+            <div class="step">
+                <strong>步骤 1:</strong> 用户输入单词
+                <div class="word-input-demo">
+                    <input class="word-input" value="ksj" readonly>
+                    <input class="word-input" value="kldf" readonly>
+                    <input class="word-input" value="jklau" readonly>
+                    <input class="word-input error" value="jlaadsfkf" readonly>
+                </div>
+                <p>正确答案应该是: ksj kldf jklau <strong>jklau</strong> (最后一个单词错误)</p>
+            </div>
+            
+            <div class="step">
+                <strong>步骤 2:</strong> 系统验证 - 发现有错误
+                <div class="feedback wrong">❌ 错误</div>
+            </div>
+            
+            <div class="step">
+                <strong>步骤 3:</strong> 错误的处理方式 - 清空所有输入
+                <div class="word-input-demo">
+                    <input class="word-input cleared" value="" placeholder="已清空" readonly>
+                    <input class="word-input cleared" value="" placeholder="已清空" readonly>
+                    <input class="word-input cleared" value="" placeholder="已清空" readonly>
+                    <input class="word-input cleared" value="" placeholder="已清空" readonly>
+                </div>
+                <p style="color: #f56c6c;">❌ 问题: 连正确的单词也被清空了，用户需要重新输入所有单词</p>
+            </div>
+        </div>
+        
+        <h2>解决方案</h2>
+        <div class="solution-demo">
+            <h3>✅ 修复后的智能逻辑</h3>
+            <p><strong>改进:</strong> 逐个验证单词，只清空错误的单词，保留正确的单词</p>
+            
+            <div class="step">
+                <strong>步骤 1:</strong> 用户输入单词 (同样的场景)
+                <div class="word-input-demo">
+                    <input class="word-input" value="ksj" readonly>
+                    <input class="word-input" value="kldf" readonly>
+                    <input class="word-input" value="jklau" readonly>
+                    <input class="word-input error" value="jlaadsfkf" readonly>
+                </div>
+            </div>
+            
+            <div class="step">
+                <strong>步骤 2:</strong> 系统逐个验证每个单词
+                <div class="word-input-demo">
+                    <input class="word-input correct" value="ksj" readonly title="正确">
+                    <input class="word-input correct" value="kldf" readonly title="正确">
+                    <input class="word-input correct" value="jklau" readonly title="正确">
+                    <input class="word-input error" value="jlaadsfkf" readonly title="错误">
+                </div>
+                <div class="feedback wrong">❌ 3/4 个单词正确</div>
+            </div>
+            
+            <div class="step">
+                <strong>步骤 3:</strong> 智能处理 - 只清空错误的单词
+                <div class="word-input-demo">
+                    <input class="word-input correct" value="ksj" readonly title="保留正确的单词">
+                    <input class="word-input correct" value="kldf" readonly title="保留正确的单词">
+                    <input class="word-input correct" value="jklau" readonly title="保留正确的单词">
+                    <input class="word-input" value="" placeholder="重新输入" title="只清空错误的单词">
+                </div>
+                <p style="color: #67c23a;">✅ 改进: 保留正确的单词，用户只需重新输入错误的单词</p>
+            </div>
+        </div>
+        
+        <h2>技术实现</h2>
+        <div class="info">
+            <h3>核心改进点:</h3>
+            <ol>
+                <li><strong>逐个验证:</strong> 不再把所有单词组合成一个字符串验证，而是逐个比较每个单词</li>
+                <li><strong>错误标记:</strong> 使用 <code>wordErrors</code> 数组标记每个单词的正确性</li>
+                <li><strong>选择性清空:</strong> 只清空标记为错误的单词输入框</li>
+                <li><strong>智能聚焦:</strong> 自动聚焦到第一个错误的输入框</li>
+                <li><strong>进度反馈:</strong> 显示 "X/Y 个单词正确" 的具体反馈</li>
+            </ol>
+        </div>
+        
+        <h3>代码逻辑</h3>
+        <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
+// 逐个验证每个单词
+let allCorrect = true;
+const correctWords = [];
+
+for (let i = 0; i < wordParts.value.length; i++) {
+  const userInput = wordInputs.value[i].trim().toLowerCase();
+  const correctWord = wordParts.value[i].toLowerCase();
+  
+  if (userInput === correctWord) {
+    correctWords.push(true);
+    wordErrors.value[i] = false;  // 标记为正确
+  } else {
+    correctWords.push(false);
+    wordErrors.value[i] = true;   // 标记为错误
+    allCorrect = false;
+  }
+}
+
+// 只清空错误的单词
+for (let i = 0; i < wordParts.value.length; i++) {
+  if (wordErrors.value[i]) {
+    wordInputs.value[i] = '';  // 只清空错误的
+  }
+}
+        </pre>
+        
+        <h2>用户体验改进</h2>
+        <div class="comparison">
+            <div>
+                <h3>修复前</h3>
+                <ul style="color: #f56c6c;">
+                    <li>❌ 一个错误，全部清空</li>
+                    <li>❌ 用户需要重新输入所有单词</li>
+                    <li>❌ 学习效率低，容易产生挫败感</li>
+                    <li>❌ 反馈信息不明确</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3>修复后</h3>
+                <ul style="color: #67c23a;">
+                    <li>✅ 智能识别，只清空错误的单词</li>
+                    <li>✅ 保留正确输入，减少重复工作</li>
+                    <li>✅ 提高学习效率和用户满意度</li>
+                    <li>✅ 明确显示正确/错误单词数量</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="info">
+            <strong>修复完成!</strong> 现在多单词验证逻辑更加智能和用户友好，只会清空错误的单词，保留用户正确的输入。
+        </div>
+    </div>
+</body>
+</html>

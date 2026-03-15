@@ -1,0 +1,50 @@
+# 一键部署命令 - 复制粘贴到 SSH 终端执行
+# 连接: ssh root@47.97.185.117
+
+# 1. 确认项目路径
+cd /root/english-learning && pwd
+
+# 2. 清理旧的 dist 文件
+rm -rf /root/english-learning/frontend-dist.zip
+rm -rf /var/www/html/learning/backup
+
+# 3. 备份当前前端
+cp -r /var/www/html/learning /var/www/html/learning-backup-$(date +%Y%m%d-%H%M%S)
+
+# 4. 等待上传新文件...
+# (请使用 FileZilla 或 WinSCP 上传以下文件到服务器)
+
+# ========== 需要上传的文件清单 ==========
+# 前端文件:
+#   - e:\demo\my1\my1\frontend\dist\index.html -> /var/www/html/learning/index.html
+#   - e:\demo\my1\my1\frontend\dist\assets\* -> /var/www/html/learning/assets/
+
+# 后端文件:
+#   - e:\demo\my1\my1\backend\src\services\AdminService.js -> /root/english-learning/backend/src/services/AdminService.js
+#   - e:\demo\my1\my1\backend\src\routes\admin.js -> /root/english-learning/backend/src/routes/admin.js
+
+# ========== 上传完成后执行以下命令 ==========
+
+# 5. 检查文件是否上传成功
+ls -lh /var/www/html/learning/index.html
+ls -lh /root/english-learning/backend/src/services/AdminService.js
+ls -lh /root/english-learning/backend/src/routes/admin.js
+
+# 6. 重启后端服务
+cd /root/english-learning/backend
+pm2 restart english-learning-backend
+
+# 7. 检查服务状态
+pm2 status
+pm2 logs english-learning-backend --lines 20
+
+# 8. 清理 Nginx 缓存
+rm -rf /var/cache/nginx/*
+systemctl reload nginx
+
+# 9. 验证部署
+curl -s http://localhost:3000/api/admin/export/all | head -c 500
+
+echo ""
+echo "部署完成!"
+echo "请访问 http://47.97.185.117/admin 查看管理后台"

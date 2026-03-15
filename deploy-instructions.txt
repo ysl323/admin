@@ -1,0 +1,73 @@
+DEPLOYMENT INSTRUCTIONS - Export Feature
+==========================================
+
+PROBLEM:
+- Upload course failed in admin panel
+- No "One-click Export Course" button
+
+SOLUTION:
+Need to manually upload files to server
+
+STEPS (using WinSCP):
+=====================
+
+Step 1: Download and install WinSCP
+https://winscp.net/eng/download.php
+
+Step 2: Connect to server
+Protocol: SFTP
+Host: 47.97.185.117
+Port: 22
+Username: root
+Password: MyEnglish2025!
+
+Step 3: Upload frontend files
+From: e:\demo\my1\my1\frontend\dist\*
+To: /var/www/html/learning/
+
+Step 4: Upload backend files
+From: e:\demo\my1\my1\backend\src\services\AdminService.js
+To: /root/english-learning/backend/src/services/AdminService.js
+
+From: e:\demo\my1\my1\backend\src\routes\admin.js
+To: /root/english-learning/backend/src/routes/admin.js
+
+Step 5: Restart service
+In WinSCP, press Ctrl+P to open terminal
+Then run:
+
+cd /root/english-learning/backend
+pm2 restart english-learning-backend
+pm2 status
+pm2 logs english-learning-backend --lines 20
+rm -rf /var/cache/nginx/*
+systemctl reload nginx
+
+VERIFICATION:
+=============
+
+1. Visit: http://47.97.185.117/admin
+2. Login and go to "Content Management"
+3. Check for "One-click Export Course" button
+4. Test export feature
+
+COMMON ISSUES:
+==============
+
+Q: Button not visible after upload?
+A: Clear browser cache (Ctrl + F5)
+
+Q: Export button not working?
+A: Open browser console (F12) to check errors
+
+Q: PM2 restart failed?
+A: Run:
+   pm2 stop english-learning-backend
+   pm2 delete english-learning-backend
+   cd /root/english-learning/backend
+   pm2 start index.js --name english-learning-backend
+   pm2 save
+
+FOR MORE DETAILS:
+=================
+See: e:\demo\my1\手动部署指南-导出功能.md
