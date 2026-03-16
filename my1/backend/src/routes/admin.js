@@ -1,4 +1,5 @@
 import express from 'express';
+import archiver from 'archiver';
 import UserService from '../services/UserService.js';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js';
 import dailyTasks from '../jobs/dailyTasks.js';
@@ -1206,7 +1207,6 @@ router.get('/export/lesson/:lessonId', async (req, res) => {
 // 一键导出所有课程为TXT打包（ZIP）
 router.get('/export/all/txt', async (req, res) => {
   try {
-    const archiver = require('archiver');
     const categories = await Category.findAll({
       include: [{
         model: Lesson,
