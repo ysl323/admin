@@ -1083,6 +1083,27 @@ router.post('/test-tts', async (req, res) => {
 // ==================== 导出接口 ====================
 
 /**
+ * GET /api/admin/export/txt-zip
+ * 导出所有课程为TXT文件并打包成ZIP
+ */
+router.get('/export/txt-zip', async (req, res) => {
+  try {
+    const archive = await AdminService.exportAllAsTxtZip();
+    
+    res.attachment(`lessons-export-${new Date().toISOString().slice(0, 10)}.zip`);
+    archive.pipe(res);
+    archive.finalize();
+  } catch (error) {
+    logger.error('导出TXT ZIP失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '导出失败',
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/admin/export/all
  * 导出所有课程数据
  */

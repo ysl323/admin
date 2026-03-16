@@ -1,0 +1,11 @@
+请在服务器运行：
+
+# 1. 检查PM2状态
+pm2 status
+
+# 2. 如果后端没运行，启动后端
+cd /root/english-learning/my1/backend
+pm2 start src/index.js --name english-learning-backend
+
+# 3. 重启PM2
+pm2 restart all

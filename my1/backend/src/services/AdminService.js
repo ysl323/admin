@@ -1,6 +1,7 @@
 import { Category, Lesson, Word, Config } from '../models/index.js';
 import { sequelize } from '../models/index.js';
 import logger from '../utils/logger.js';
+import archiver from 'archiver';
 
 /**
  * 管理员服务类
@@ -709,6 +710,60 @@ class AdminService {
       };
     } catch (error) {
       logger.error(`导出课程 ${lessonId} 失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 导出所有课程为TXT文件并打包成ZIP
+   * @returns {Promise<stream>} ZIP文件流
+   */
+  async exportAllAsTxtZip() {
+    try {
+      // 获取所有分类和课程
+      const categories = await Category.findAll({
+        order: [['id', 'ASC']],
+        include: [{
+          model: Lesson,
+          as: 'lessons',
+          order: [['lessonNumber', 'ASC']],
+          include: [{
+            model: Word,
+            as: 'words',
+            order: [['id', 'ASC']]
+          }]
+        }]
+      });
+
+      // 创建archiver实例
+      const archive = archiver('zip', {
+        zlib: { level: 9 }
+      });
+
+      // 为每个课程的每个单词创建txt文件
+      for (const category of categories) {
+        for (const lesson of category.lessons) {
+          if (lesson.words.length === 0) continue;
+
+          // 生成txt内容
+          let txtContent = '';
+          for (const word of lesson.words) {
+            txtContent += `question: ${word.id}\n`;
+            txtContent += `english: ${word.english}\n`;
+            txtContent += `chinese: ${word.chinese}\n\n`;
+          }
+
+          // 添加到zip
+          const fileName = `${category.name}/Lesson${lesson.lessonNumber}.txt`;
+          archive.append(txtContent, { name: fileName });
+        }
+      }
+
+      logger.info(`导出TXT ZIP: ${categories.length} 分类`);
+
+      return archive;
+    } catch (error) {
+      logger.error('导出TXT ZIP失败:', error);
       throw error;
     }
   }
