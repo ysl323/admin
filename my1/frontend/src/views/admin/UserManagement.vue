@@ -3,257 +3,181 @@
     <div class="header">
       <h2>用户管理</h2>
       <div class="header-actions">
-        <el-button type="success" @click="handleCreateUser">
+        <el-button type="success" size="default" @click="handleCreateUser">
           <el-icon><Plus /></el-icon>
-          创建用户
+          <span class="btn-text">创建用户</span>
         </el-button>
-        <el-button type="primary" @click="loadUsers">
+        <el-button type="primary" size="default" @click="loadUsers">
           <el-icon><Refresh /></el-icon>
-          刷新
+          <span class="btn-text">刷新</span>
         </el-button>
       </div>
     </div>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
-      <el-skeleton :rows="8" animated />
+      <el-skeleton :rows="5" animated />
     </div>
 
-    <!-- 用户列表 -->
-    <el-table v-else :data="users" stripe style="width: 100%">
+    <!-- PC端表格视图 -->
+    <el-table v-else :data="users" stripe class="pc-table">
       <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="username" label="用户名" width="130" />
-      <el-table-column prop="lastLoginIp" label="最后登录IP" width="120" />
-      <el-table-column prop="accessDays" label="剩余天数" width="100">
+      <el-table-column prop="username" label="用户名" min-width="100" />
+      <el-table-column prop="accessDays" label="天数" width="80">
         <template #default="{ row }">
-          <el-tag v-if="row.isAdmin" type="success">永久</el-tag>
-          <el-tag v-else :type="row.accessDays > 7 ? 'success' : row.accessDays > 0 ? 'warning' : 'danger'">
-            {{ row.accessDays }} 天
+          <el-tag v-if="row.isAdmin" type="success" size="small">永久</el-tag>
+          <el-tag v-else :type="row.accessDays > 7 ? 'success' : row.accessDays > 0 ? 'warning' : 'danger'" size="small">
+            {{ row.accessDays }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="isSuperAdmin" label="超级管理员" width="100">
+      <el-table-column prop="isSuperAdmin" label="超管" width="70">
         <template #default="{ row }">
-          <el-tag v-if="row.isSuperAdmin" type="danger">是</el-tag>
-          <el-tag v-else type="info">否</el-tag>
+          <el-tag v-if="row.isSuperAdmin" type="danger" size="small">是</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="isAdmin" label="管理员" width="80">
+      <el-table-column prop="isAdmin" label="管理员" width="70">
         <template #default="{ row }">
-          <el-tag :type="row.isAdmin ? 'success' : 'info'">
-            {{ row.isAdmin ? '是' : '否' }}
-          </el-tag>
+          <el-tag v-if="row.isAdmin" type="success" size="small">是</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="isActive" label="状态" width="80">
+      <el-table-column prop="isActive" label="状态" width="70">
         <template #default="{ row }">
-          <el-tag :type="row.isActive ? 'success' : 'danger'">
+          <el-tag :type="row.isActive ? 'success' : 'danger'" size="small">
             {{ row.isActive ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="创建时间" width="150">
+      <el-table-column label="操作" fixed="right" width="200">
         <template #default="{ row }">
-          {{ formatDate(row.createdAt) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" fixed="right" width="280">
-        <template #default="{ row }">
-          <el-button link size="small" type="primary" @click="handleSetPermissions(row)">
-            <el-icon><Setting /></el-icon>
-            权限
-          </el-button>
-          <el-button link size="small" @click="handleEditUsername(row)">
-            <el-icon><Edit /></el-icon>
-            改名
-          </el-button>
-          <el-button link size="small" type="warning" @click="handleResetPassword(row)">
-            <el-icon><Key /></el-icon>
-            改密
-          </el-button>
-          <el-button 
-            link
-            size="small" 
-            :type="row.isActive ? 'danger' : 'success'" 
-            @click="handleToggleStatus(row)"
-          >
+          <el-button link size="small" type="primary" @click="handleSetPermissions(row)">权限</el-button>
+          <el-button link size="small" @click="handleEditUsername(row)">改名</el-button>
+          <el-button link size="small" type="warning" @click="handleResetPassword(row)">改密</el-button>
+          <el-button link size="small" :type="row.isActive ? 'danger' : 'success'" @click="handleToggleStatus(row)">
             {{ row.isActive ? '禁用' : '启用' }}
           </el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 修改用户名对话框 -->
-    <el-dialog
-      v-model="editUsernameDialog"
-      title="修改用户名"
-      width="400px"
-    >
-      <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="80px">
-        <el-form-item label="当前用户" prop="currentUsername">
-          <el-input v-model="editForm.currentUsername" disabled />
-        </el-form-item>
-        <el-form-item label="新用户名" prop="newUsername">
-          <el-input 
-            v-model="editForm.newUsername" 
-            placeholder="请输入新用户名（3-20字符）"
-            clearable
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editUsernameDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmEditUsername" :loading="submitting">
-          确定
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 重置密码对话框 -->
-    <el-dialog
-      v-model="resetPasswordDialog"
-      title="重置密码"
-      width="400px"
-    >
-      <el-form :model="resetForm" :rules="resetRules" ref="resetFormRef" label-width="80px">
-        <el-form-item label="用户名">
-          <el-input v-model="resetForm.username" disabled />
-        </el-form-item>
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input 
-            v-model="resetForm.newPassword" 
-            type="password"
-            placeholder="请输入新密码（至少6字符）"
-            show-password
-            clearable
-          />
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input 
-            v-model="resetForm.confirmPassword" 
-            type="password"
-            placeholder="请再次输入新密码"
-            show-password
-            clearable
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="resetPasswordDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmResetPassword" :loading="submitting">
-          确定
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 增加天数对话框 -->
-    <el-dialog
-      v-model="addDaysDialog"
-      title="增加访问天数"
-      width="400px"
-    >
-      <el-form :model="addDaysForm" :rules="addDaysRules" ref="addDaysFormRef" label-width="100px">
-        <el-form-item label="用户名">
-          <el-input v-model="addDaysForm.username" disabled />
-        </el-form-item>
-        <el-form-item label="当前天数">
-          <el-input v-model="addDaysForm.currentDays" disabled />
-        </el-form-item>
-        <el-form-item label="增加天数" prop="days">
-          <el-input-number 
-            v-model="addDaysForm.days" 
-            :min="1" 
-            :max="365"
-            placeholder="请输入要增加的天数"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="addDaysDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmAddDays" :loading="submitting">
-          确定
-        </el-button>
-      </template>
-    </el-dialog>
+    <!-- 移动端卡片视图 -->
+    <div v-if="!loading" class="mobile-cards">
+      <div v-for="user in users" :key="user.id" class="user-card">
+        <div class="card-header">
+          <span class="username">{{ user.username }}</span>
+          <el-tag v-if="user.isSuperAdmin" type="danger" size="small">超管</el-tag>
+          <el-tag v-else-if="user.isAdmin" type="success" size="small">管理员</el-tag>
+          <el-tag :type="user.isActive ? 'success' : 'danger'" size="small">
+            {{ user.isActive ? '启用' : '禁用' }}
+          </el-tag>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="label">剩余天数:</span>
+            <el-tag v-if="user.isAdmin" type="success" size="small">永久</el-tag>
+            <span v-else :class="user.accessDays <= 7 ? 'warning-text' : ''">{{ user.accessDays }} 天</span>
+          </div>
+          <div class="info-row">
+            <span class="label">最后登录:</span>
+            <span>{{ user.lastLoginIp || '-' }}</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <el-button size="small" type="primary" @click="handleSetPermissions(user)">权限</el-button>
+          <el-button size="small" @click="handleEditUsername(user)">改名</el-button>
+          <el-button size="small" type="warning" @click="handleResetPassword(user)">改密</el-button>
+          <el-button size="small" :type="user.isActive ? 'danger' : 'success'" @click="handleToggleStatus(user)">
+            {{ user.isActive ? '禁用' : '启用' }}
+          </el-button>
+        </div>
+      </div>
+    </div>
 
     <!-- 创建用户对话框 -->
-    <el-dialog
-      v-model="createUserDialog"
-      title="创建新用户"
-      width="450px"
-    >
-      <el-form :model="createUserForm" :rules="createUserRules" ref="createUserFormRef" label-width="100px">
+    <el-dialog v-model="createUserDialog" title="创建新用户" width="400px">
+      <el-form :model="createUserForm" :rules="createUserRules" ref="createUserFormRef" label-width="90px">
         <el-form-item label="用户名" prop="username">
-          <el-input 
-            v-model="createUserForm.username" 
-            placeholder="请输入用户名（3-20字符）"
-            clearable
-          />
+          <el-input v-model="createUserForm.username" placeholder="3-20字符" clearable />
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input 
-            v-model="createUserForm.password" 
-            type="password"
-            placeholder="请输入密码（至少6字符）"
-            show-password
-            clearable
-          />
+          <el-input v-model="createUserForm.password" type="password" placeholder="至少6字符" show-password clearable />
         </el-form-item>
-        <el-form-item label="访问天数" prop="accessDays">
-          <el-input-number 
-            v-model="createUserForm.accessDays" 
-            :min="1" 
-            :max="999"
-          />
-          <span style="margin-left: 10px; color: #909399;">管理员将自动设为永久</span>
+        <el-form-item label="访问天数">
+          <el-input-number v-model="createUserForm.accessDays" :min="1" :max="999" />
         </el-form-item>
         <el-form-item label="管理员">
           <el-switch v-model="createUserForm.isAdmin" />
+          <span class="hint">管理员永久有效</span>
         </el-form-item>
         <el-form-item label="超级管理员">
           <el-switch v-model="createUserForm.isSuperAdmin" />
-          <span style="margin-left: 10px; color: #909399;">拥有最高权限</span>
+          <span class="hint">最高权限</span>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createUserDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmCreateUser" :loading="submitting">
-          创建
-        </el-button>
+        <el-button type="primary" @click="confirmCreateUser" :loading="submitting">创建</el-button>
       </template>
     </el-dialog>
 
     <!-- 设置权限对话框 -->
-    <el-dialog
-      v-model="permissionsDialog"
-      title="设置用户权限"
-      width="450px"
-    >
-      <el-form :model="permissionsForm" ref="permissionsFormRef" label-width="100px">
+    <el-dialog v-model="permissionsDialog" title="设置用户权限" width="400px">
+      <el-form :model="permissionsForm" ref="permissionsFormRef" label-width="90px">
         <el-form-item label="用户名">
           <el-input v-model="permissionsForm.username" disabled />
         </el-form-item>
         <el-form-item label="管理员">
           <el-switch v-model="permissionsForm.isAdmin" />
-          <span style="margin-left: 10px; color: #909399;">管理员账号永久有效</span>
+          <span class="hint">永久有效</span>
         </el-form-item>
         <el-form-item label="超级管理员">
           <el-switch v-model="permissionsForm.isSuperAdmin" />
-          <span style="margin-left: 10px; color: #909399;">拥有最高权限</span>
+          <span class="hint">最高权限</span>
         </el-form-item>
         <el-form-item label="访问天数" v-if="!permissionsForm.isAdmin">
-          <el-input-number 
-            v-model="permissionsForm.accessDays" 
-            :min="0" 
-            :max="999"
-          />
+          <el-input-number v-model="permissionsForm.accessDays" :min="0" :max="999" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="permissionsDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmPermissions" :loading="submitting">
-          保存
-        </el-button>
+        <el-button type="primary" @click="confirmPermissions" :loading="submitting">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 修改用户名对话框 -->
+    <el-dialog v-model="editUsernameDialog" title="修改用户名" width="400px">
+      <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="80px">
+        <el-form-item label="当前用户">
+          <el-input v-model="editForm.currentUsername" disabled />
+        </el-form-item>
+        <el-form-item label="新用户名" prop="newUsername">
+          <el-input v-model="editForm.newUsername" placeholder="3-20字符" clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editUsernameDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditUsername" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 重置密码对话框 -->
+    <el-dialog v-model="resetPasswordDialog" title="重置密码" width="400px">
+      <el-form :model="resetForm" :rules="resetRules" ref="resetFormRef" label-width="80px">
+        <el-form-item label="用户名">
+          <el-input v-model="resetForm.username" disabled />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="resetForm.newPassword" type="password" placeholder="至少6字符" show-password clearable />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="resetForm.confirmPassword" type="password" placeholder="再次输入" show-password clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resetPasswordDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmResetPassword" :loading="submitting">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -345,22 +269,6 @@ const resetRules = {
   ]
 };
 
-// 增加天数
-const addDaysDialog = ref(false);
-const addDaysFormRef = ref(null);
-const addDaysForm = ref({
-  userId: null,
-  username: '',
-  currentDays: 0,
-  days: 30
-});
-const addDaysRules = {
-  days: [
-    { required: true, message: '请输入要增加的天数', trigger: 'blur' },
-    { type: 'number', min: 1, max: 365, message: '天数范围为 1-365', trigger: 'blur' }
-  ]
-};
-
 onMounted(() => {
   loadUsers();
 });
@@ -380,19 +288,6 @@ const loadUsers = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-// 格式化日期
-const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 };
 
 // 修改用户名
@@ -425,7 +320,7 @@ const confirmEditUsername = async () => {
       ElMessage.error(response.message || '用户名修改失败');
     }
   } catch (error) {
-    if (error.errors) return; // 表单验证错误
+    if (error.errors) return;
     ElMessage.error(error.message || '用户名修改失败');
   } finally {
     submitting.value = false;
@@ -462,46 +357,8 @@ const confirmResetPassword = async () => {
       ElMessage.error(response.message || '密码重置失败');
     }
   } catch (error) {
-    if (error.errors) return; // 表单验证错误
+    if (error.errors) return;
     ElMessage.error(error.message || '密码重置失败');
-  } finally {
-    submitting.value = false;
-  }
-};
-
-// 增加天数
-const handleAddDays = (user) => {
-  addDaysForm.value = {
-    userId: user.id,
-    username: user.username,
-    currentDays: user.accessDays,
-    days: 30
-  };
-  addDaysDialog.value = true;
-};
-
-const confirmAddDays = async () => {
-  if (!addDaysFormRef.value) return;
-  
-  try {
-    await addDaysFormRef.value.validate();
-    
-    submitting.value = true;
-    const response = await adminService.addAccessDays(
-      addDaysForm.value.userId,
-      addDaysForm.value.days
-    );
-    
-    if (response.success) {
-      ElMessage.success(`成功增加 ${addDaysForm.value.days} 天`);
-      addDaysDialog.value = false;
-      loadUsers();
-    } else {
-      ElMessage.error(response.message || '增加天数失败');
-    }
-  } catch (error) {
-    if (error.errors) return; // 表单验证错误
-    ElMessage.error(error.message || '增加天数失败');
   } finally {
     submitting.value = false;
   }
@@ -514,11 +371,7 @@ const handleToggleStatus = async (user) => {
     await ElMessageBox.confirm(
       `确定要${action}用户 "${user.username}" 吗？`,
       '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
     );
     
     const response = await adminService.toggleUserStatus(user.id);
@@ -620,6 +473,13 @@ const confirmPermissions = async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #303133;
 }
 
 .header-actions {
@@ -627,12 +487,114 @@ const confirmPermissions = async () => {
   gap: 10px;
 }
 
-h2 {
-  margin: 0;
+.loading-container {
+  padding: 20px;
+}
+
+.hint {
+  margin-left: 10px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.warning-text {
+  color: #e6a23c;
+}
+
+/* PC端表格 - 默认显示 */
+.pc-table {
+  display: table;
+}
+
+/* 移动端卡片 - 默认隐藏 */
+.mobile-cards {
+  display: none;
+}
+
+.user-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.card-header .username {
+  font-size: 16px;
+  font-weight: 600;
   color: #303133;
 }
 
-.loading-container {
-  padding: 20px;
+.card-body {
+  margin-bottom: 12px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.info-row .label {
+  color: #909399;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .user-management {
+    padding: 10px;
+  }
+
+  .header h2 {
+    font-size: 18px;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .pc-table {
+    display: none;
+  }
+
+  .mobile-cards {
+    display: block;
+  }
+}
+
+/* 对话框移动端适配 */
+@media screen and (max-width: 480px) {
+  :deep(.el-dialog) {
+    width: 95% !important;
+    margin: 5vh auto !important;
+  }
+
+  :deep(.el-form-item__label) {
+    float: none;
+    text-align: left;
+    padding-bottom: 5px;
+  }
+
+  :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
 }
 </style>
