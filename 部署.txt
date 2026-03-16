@@ -1,0 +1,4 @@
+请运行以下命令检查现有文件：
+
+ls -la /var/www/html/
+cat /var/www/html/index.html 2>/dev/null | head -20
