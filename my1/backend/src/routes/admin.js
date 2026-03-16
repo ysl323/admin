@@ -316,11 +316,10 @@ router.get('/tasks/status', (req, res) => {
   }
 });
 
-export default router;
-
 // ==================== 内容管理接口 ====================
 
 import AdminService from '../services/AdminService.js';
+import { Category, Lesson, Word } from '../models/index.js';
 
 /**
  * GET /api/admin/categories
@@ -1203,6 +1202,41 @@ router.get('/export/lesson/:lessonId', async (req, res) => {
     });
   }
 });
+
+// 一键导出所有课程为TXT打包（ZIP）
+router.get('/export/all/txt', async (req, res) => {
+  try {
+    const archiver = require('archiver');
+    const categories = await Category.findAll({
+      include: [{
+        model: Lesson,
+        as: 'lessons',
+        include: [{ model: Word, as: 'words', order: [['id', 'ASC']] }]
+      }]
+    });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="all-lessons-${new Date().toISOString().slice(0,10)}.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    for (const cat of categories) {
+      for (const lesson of cat.lessons) {
+        let txt = '';
+        for (const w of lesson.words) {
+          txt += `question: ${w.id}\nenglish: ${w.english}\nchinese: ${w.chinese}\n\n`;
+        }
+        archive.append(txt, { name: `${cat.name}/Lesson${lesson.lessonNumber}.txt` });
+      }
+    }
+
+    archive.finalize();
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
+
+export default router;
+
 
