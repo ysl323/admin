@@ -1296,16 +1296,20 @@ router.get('/export/all/txt', async (req, res) => {
     archive.pipe(res);
 
     for (const cat of categories) {
+      // 一个分类一个文件，包含所有课程
+      const allWords = [];
       for (const lesson of cat.lessons) {
-        const jsonData = lesson.words.map(w => ({
-          lesson: lesson.lessonNumber,
-          question: w.id,
-          english: w.english,
-          chinese: w.chinese
-        }));
-        const jsonStr = JSON.stringify(jsonData, null, 2);
-        archive.append(jsonStr, { name: `${cat.name}/Lesson${lesson.lessonNumber}.txt` });
+        for (const w of lesson.words) {
+          allWords.push({
+            lesson: lesson.lessonNumber,
+            question: w.id,
+            english: w.english,
+            chinese: w.chinese
+          });
+        }
       }
+      const jsonStr = JSON.stringify(allWords, null, 2);
+      archive.append(jsonStr, { name: `${cat.name}.txt` });
     }
 
     archive.finalize();
