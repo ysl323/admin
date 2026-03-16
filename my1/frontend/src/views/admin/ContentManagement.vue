@@ -812,27 +812,20 @@ const exportCategory = async (category) => {
 
 const exportLesson = async (lesson) => {
   try {
-    ElMessage.info(`正在导出第${lesson.lessonNumber}课的数据...`);
+    ElMessage.info(`正在导出第${lesson.lessonNumber}课...`);
 
-    const response = await adminService.exportLessonData(lesson.id);
+    const blob = await adminService.exportLessonTxt(lesson.id);
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Lesson${lesson.lessonNumber}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-    if (response.success) {
-      const jsonString = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lesson-${lesson.lessonNumber}-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      ElMessage.success(`导出成功！${response.stats.words} 个单词`);
-    } else {
-      ElMessage.error(response.message || '导出失败');
-    }
+    ElMessage.success('导出成功！');
   } catch (error) {
     ElMessage.error(error.message || '导出失败');
   }
