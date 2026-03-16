@@ -1204,7 +1204,7 @@ router.get('/export/lesson/:lessonId', async (req, res) => {
   }
 });
 
-// 一键导出所有课程为TXT打包（ZIP）
+// 一键导出所有课程为JSON打包（ZIP）
 router.get('/export/all/txt', async (req, res) => {
   try {
     const categories = await Category.findAll({
@@ -1223,11 +1223,14 @@ router.get('/export/all/txt', async (req, res) => {
 
     for (const cat of categories) {
       for (const lesson of cat.lessons) {
-        let txt = '';
-        for (const w of lesson.words) {
-          txt += `question: ${w.id}\nenglish: ${w.english}\nchinese: ${w.chinese}\n\n`;
-        }
-        archive.append(txt, { name: `${cat.name}/Lesson${lesson.lessonNumber}.txt` });
+        const jsonData = lesson.words.map(w => ({
+          lesson: lesson.lessonNumber,
+          question: w.id,
+          english: w.english,
+          chinese: w.chinese
+        }));
+        const jsonStr = JSON.stringify(jsonData, null, 2);
+        archive.append(jsonStr, { name: `${cat.name}/Lesson${lesson.lessonNumber}.json` });
       }
     }
 
