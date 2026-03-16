@@ -1,0 +1,14 @@
+请在服务器运行以下命令诊断：
+
+# 1. 检查文件是否复制成功
+ls -la /var/www/html/
+
+# 2. 检查nginx状态
+nginx -t
+systemctl status nginx
+
+# 3. 检查nginx错误日志
+tail -30 /var/log/nginx/error.log
+
+# 4. 检查端口
+netstat -tlnp | grep 80

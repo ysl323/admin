@@ -1,0 +1,27 @@
+请在服务器运行以下命令修复nginx配置：
+
+# 1. 查看当前nginx配置
+cat /etc/nginx/conf.d/english-learning.conf
+
+# 2. 创建正确的配置
+cat > /etc/nginx/conf.d/english-learning.conf << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# 3. 重启nginx
+nginx -s reload

@@ -35,6 +35,10 @@
             <el-icon><Download /></el-icon>
             一键导出课程
           </el-button>
+          <el-button type="warning" @click="handleExportTxtZip">
+            <el-icon><Download /></el-icon>
+            导出TXT(ZIP)
+          </el-button>
         </div>
         <el-input 
           v-model="categorySearch" 
@@ -742,6 +746,37 @@ const handleExportAll = async () => {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '导出失败');
     }
+  }
+};
+
+// 导出TXT ZIP
+const handleExportTxtZip = async () => {
+  try {
+    ElMessage.info('正在生成ZIP文件，请稍候...');
+    
+    const response = await fetch('/api/admin/export/txt-zip', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('导出失败');
+    }
+    
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lessons-export-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    ElMessage.success('导出成功！');
+  } catch (error) {
+    ElMessage.error(error.message || '导出失败');
   }
 };
 

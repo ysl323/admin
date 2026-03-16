@@ -1,0 +1,10 @@
+请在服务器运行：
+
+# 1. 查看PM2日志
+pm2 logs english-learning-backend --lines 20
+
+# 2. 检查数据库文件
+ls -la /root/english-learning/my1/backend/database.sqlite
+
+# 3. 检查数据库中的用户
+sqlite3 /root/english-learning/my1/backend/database.sqlite "SELECT username, role FROM users;"
