@@ -210,5 +210,19 @@ export default {
    */
   async exportLessonData(lessonId) {
     return await api.get(`/admin/export/lesson/${lessonId}`);
+  },
+
+  /**
+   * 导出指定课程为TXT文件
+   */
+  async exportLessonTxt(lessonId) {
+    const response = await fetch(`/api/admin/export/lesson/${lessonId}/txt`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      throw new Error('导出失败');
+    }
+    return await response.blob();
   }
 };
