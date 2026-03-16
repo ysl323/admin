@@ -1230,7 +1230,7 @@ router.get('/export/all/txt', async (req, res) => {
           chinese: w.chinese
         }));
         const jsonStr = JSON.stringify(jsonData, null, 2);
-        archive.append(jsonStr, { name: `${cat.name}/Lesson${lesson.lessonNumber}.json` });
+        archive.append(jsonStr, { name: `${cat.name}/Lesson${lesson.lessonNumber}.txt` });
       }
     }
 
