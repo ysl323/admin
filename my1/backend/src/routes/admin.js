@@ -273,6 +273,80 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/users
+ * 创建新用户
+ */
+router.post('/users', async (req, res) => {
+  try {
+    const { username, password, accessDays, isAdmin, isSuperAdmin } = req.body;
+
+    const result = await UserService.createUser({
+      username,
+      password,
+      accessDays,
+      isAdmin,
+      isSuperAdmin
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    logger.error('创建用户失败:', error);
+
+    if (error.message.includes('用户名')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: '创建用户失败'
+    });
+  }
+});
+
+/**
+ * PUT /api/admin/users/:id/permissions
+ * 更新用户权限
+ */
+router.put('/users/:id/permissions', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    const { isAdmin, isSuperAdmin, accessDays } = req.body;
+
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: '无效的用户 ID'
+      });
+    }
+
+    const result = await UserService.updatePermissions(userId, {
+      isAdmin,
+      isSuperAdmin,
+      accessDays
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('更新用户权限失败:', error);
+
+    if (error.message === '用户不存在') {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: '更新用户权限失败'
+    });
+  }
+});
+
+/**
  * POST /api/admin/tasks/decrement-days
  * 手动触发每日天数递减任务（用于测试）
  */

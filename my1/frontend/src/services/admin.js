@@ -42,6 +42,20 @@ export default {
     return await api.put(`/admin/users/${userId}/toggle-status`);
   },
 
+  /**
+   * 创建新用户
+   */
+  async createUser(userData) {
+    return await api.post('/admin/users', userData);
+  },
+
+  /**
+   * 更新用户权限
+   */
+  async updatePermissions(userId, permissions) {
+    return await api.put(`/admin/users/${userId}/permissions`, permissions);
+  },
+
   // ========== 内容管理 ==========
   
   /**
