@@ -57,6 +57,13 @@ const User = sequelize.define(
       allowNull: false,
       field: 'is_admin'
     },
+    isSuperAdmin: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+      field: 'is_super_admin',
+      comment: '超级管理员，拥有最高权限'
+    },
     registerIp: {
       type: DataTypes.STRING(45),
       allowNull: true,

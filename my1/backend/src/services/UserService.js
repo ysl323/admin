@@ -79,13 +79,14 @@ class UserService {
     try {
       logger.info('开始执行每日天数递减任务...');
 
-      // 查找所有 accessDays > 0 的活跃用户
+      // 查找所有 accessDays > 0 的活跃用户，且不是管理员
       const users = await User.findAll({
         where: {
           accessDays: {
             [Op.gt]: 0
           },
-          isActive: true
+          isActive: true,
+          isAdmin: false  // 管理员跳过天数递减
         }
       });
 
@@ -139,6 +140,7 @@ class UserService {
           'accessDays',
           'isActive',
           'isAdmin',
+          'isSuperAdmin',
           'registerIp',
           'lastLoginIp',
           'createdAt',
@@ -154,6 +156,7 @@ class UserService {
         expireDate: user.expireDate,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
+        isSuperAdmin: user.isSuperAdmin,
         lastLoginIp: this.formatIp(user.lastLoginIp),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -375,6 +378,118 @@ class UserService {
       };
     } catch (error) {
       logger.error('获取用户统计信息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建新用户
+   * @param {Object} userData - 用户数据
+   * @returns {Promise<Object>} 创建结果
+   */
+  async createUser(userData) {
+    try {
+      const { username, password, accessDays = 3, isAdmin = false, isSuperAdmin = false } = userData;
+
+      if (!username || !username.trim()) {
+        throw new Error('用户名不能为空');
+      }
+
+      if (!password || password.length < 6) {
+        throw new Error('密码长度至少6位');
+      }
+
+      // 检查用户名是否已存在
+      const existingUser = await User.findOne({ where: { username: username.trim() } });
+      if (existingUser) {
+        throw new Error('用户名已存在');
+      }
+
+      // 加密密码
+      const passwordHash = await PasswordService.hash(password);
+
+      // 创建用户
+      const user = await User.create({
+        username: username.trim(),
+        passwordHash,
+        accessDays: isAdmin ? 999999 : accessDays,  // 管理员设置极大天数
+        isAdmin,
+        isSuperAdmin,
+        isActive: true
+      });
+
+      logger.info(`管理员创建用户: ${user.username}, isAdmin: ${isAdmin}, isSuperAdmin: ${isSuperAdmin}`);
+
+      return {
+        success: true,
+        message: '用户创建成功',
+        user: {
+          id: user.id,
+          username: user.username,
+          accessDays: user.accessDays,
+          isAdmin: user.isAdmin,
+          isSuperAdmin: user.isSuperAdmin,
+          isActive: user.isActive
+        }
+      };
+    } catch (error) {
+      logger.error('创建用户失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新用户权限
+   * @param {number} userId - 用户ID
+   * @param {Object} permissions - 权限设置
+   * @returns {Promise<Object>} 更新结果
+   */
+  async updatePermissions(userId, permissions) {
+    try {
+      const { isAdmin, isSuperAdmin, accessDays } = permissions;
+
+      const user = await User.findByPk(userId);
+      if (!user) {
+        throw new Error('用户不存在');
+      }
+
+      // 更新权限
+      if (typeof isAdmin === 'boolean') {
+        user.isAdmin = isAdmin;
+        if (isAdmin && accessDays === undefined) {
+          user.accessDays = 999999;  // 设为管理员时自动设置大天数
+        }
+      }
+
+      if (typeof isSuperAdmin === 'boolean') {
+        user.isSuperAdmin = isSuperAdmin;
+        if (isSuperAdmin) {
+          user.isAdmin = true;  // 超级管理员必定是管理员
+          user.accessDays = 999999;
+        }
+      }
+
+      if (accessDays !== undefined && !user.isAdmin) {
+        user.accessDays = accessDays;
+      }
+
+      await user.save();
+
+      logger.info(`管理员更新用户权限: ${user.username}, isAdmin: ${user.isAdmin}, isSuperAdmin: ${user.isSuperAdmin}`);
+
+      return {
+        success: true,
+        message: '权限更新成功',
+        user: {
+          id: user.id,
+          username: user.username,
+          accessDays: user.accessDays,
+          isAdmin: user.isAdmin,
+          isSuperAdmin: user.isSuperAdmin
+        }
+      };
+    } catch (error) {
+      logger.error('更新用户权限失败:', error);
       throw error;
     }
   }
