@@ -673,7 +673,17 @@ const importLesson = async () => {
     try {
       data = JSON.parse(importForm.value.jsonData);
     } catch (error) {
-      ElMessage.error('JSON 格式错误，请检查数据格式');
+      // 提取错误位置信息
+      const match = error.message.match(/position (\d+)/);
+      if (match) {
+        const pos = parseInt(match[1]);
+        const start = Math.max(0, pos - 30);
+        const end = Math.min(importForm.value.jsonData.length, pos + 30);
+        const snippet = importForm.value.jsonData.substring(start, end);
+        ElMessage.error(`JSON 格式错误，位置 ${pos} 附近: ...${snippet}...`);
+      } else {
+        ElMessage.error('JSON 格式错误: ' + error.message);
+      }
       return;
     }
     

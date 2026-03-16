@@ -30,14 +30,25 @@ class SimpleLessonImportService {
     const { error, value } = schema.validate(data, { abortEarly: false });
     
     if (error) {
-      const errors = error.details.map(detail => ({
-        field: detail.path.join('.'),
-        message: detail.message
-      }));
+      const errors = error.details.slice(0, 10).map(detail => {
+        const index = detail.path[0];
+        const field = detail.path[1] || 'unknown';
+        return {
+          index: index,
+          item: data[index],
+          field: field,
+          message: detail.message
+        };
+      });
+      
+      const errorMsg = errors.map(e => 
+        `第${e.index + 1}条数据 [${e.field}]: ${e.message}`
+      ).join('; ');
       
       return {
         valid: false,
-        errors
+        errors,
+        errorMsg: `发现 ${error.details.length} 个错误: ${errorMsg}${error.details.length > 10 ? '...(显示前10个)' : ''}`
       };
     }
     
@@ -89,7 +100,7 @@ class SimpleLessonImportService {
       // 验证 JSON 格式
       const validation = this.validateJSON(data);
       if (!validation.valid) {
-        throw new Error(`JSON 格式验证失败: ${JSON.stringify(validation.errors)}`);
+        throw new Error(validation.errorMsg);
       }
 
       const validData = validation.data;
