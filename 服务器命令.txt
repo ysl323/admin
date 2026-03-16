@@ -1,0 +1,15 @@
+请依次在服务器终端运行以下命令：
+
+# 1. 检查网站目录
+ls -la /root/english-learning/frontend/dist/
+
+# 2. 检查nginx配置
+cat /etc/nginx/conf.d/english-learning.conf
+
+# 3. 查看nginx错误日志
+tail -30 /var/log/nginx/error.log
+
+# 4. 检查PM2状态
+pm2 status
+
+把结果发给我。

@@ -1,0 +1,24 @@
+========================================
+在腾讯云VNC里登录后，依次运行以下命令诊断问题：
+========================================
+
+# 1. 检查前端目录是否有文件
+ls -la /root/english-learning/frontend/dist/
+
+# 2. 检查Nginx配置
+cat /etc/nginx/conf.d/english-learning.conf
+
+# 3. 检查实际服务目录
+ls -la /var/www/html/
+
+# 4. 查看nginx错误日志
+tail -50 /var/log/nginx/error.log
+
+# 5. 查看PM2状态
+pm2 status
+
+# 6. 查看PM2日志
+pm2 logs --lines 20
+
+========================================
+把以上命令的执行结果发给我，我帮你分析问题。
