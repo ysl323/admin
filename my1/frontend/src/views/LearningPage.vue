@@ -22,16 +22,6 @@
 
       <!-- 学习内容 -->
       <div v-else-if="words.length > 0" class="learning-container">
-        <!-- 点击开始覆盖层（iOS设备需要用户交互才能聚焦输入框） -->
-        <div v-if="showStartOverlay" class="start-overlay" @click="handleStartLearning">
-          <div class="start-content">
-            <el-icon :size="48"><VideoPlay /></el-icon>
-            <h2>点击开始学习</h2>
-            <p>{{ lessonInfo.categoryName }} - 第 {{ lessonInfo.lessonNumber }} 课</p>
-            <p class="hint">共 {{ words.length }} 个单词</p>
-          </div>
-        </div>
-
         <!-- 课程信息卡片 -->
         <el-card class="lesson-info-card" shadow="hover">
           <div class="lesson-header">
@@ -242,7 +232,6 @@ const isChecking = ref(false);
 const isPlaying = ref(false);
 const showCompleteDialog = ref(false);
 const answerInputRef = ref(null);
-const showStartOverlay = ref(true); // 开始学习覆盖层
 
 // 多单词输入相关
 const wordParts = ref([]);
@@ -328,20 +317,8 @@ onMounted(async () => {
   if (words.value.length > 0) {
     // 启动学习会话
     await learningStore.startSession(lessonId.value, words.value);
-    initWordInputs(false); // 先不聚焦
-
-    // 检测是否是iOS/iPadOS设备
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOS) {
-      // iOS设备需要显示覆盖层，等待用户点击
-      showStartOverlay.value = true;
-    } else {
-      // 非iOS设备直接开始
-      await playAudio(2);
-      focusInput();
-    }
+    initWordInputs();
+    await playAudio(2); // 自动播放2遍
   }
 
   // 监听键盘弹出，自动滚动到输入框
@@ -394,7 +371,7 @@ const loadWords = async () => {
 };
 
 // 初始化单词输入
-const initWordInputs = (shouldFocus = true) => {
+const initWordInputs = () => {
   const english = currentWord.value.english || '';
   wordParts.value = english.split(' ').filter(part => part.length > 0);
   wordInputs.value = new Array(wordParts.value.length).fill('');
@@ -402,14 +379,7 @@ const initWordInputs = (shouldFocus = true) => {
   currentWordIndex.value = 0;
   userAnswer.value = '';
 
-  // 只有在需要聚焦时才执行（iOS需要用户交互后才能聚焦）
-  if (shouldFocus && !showStartOverlay.value) {
-    focusInput();
-  }
-};
-
-// 聚焦输入框
-const focusInput = () => {
+  // 聚焦到第一个输入框并滚动到可视区域
   nextTick(() => {
     let inputEl = null;
     if (wordParts.value.length === 1) {
@@ -428,13 +398,6 @@ const focusInput = () => {
       }
     }
   });
-};
-
-// 点击开始学习
-const handleStartLearning = async () => {
-  showStartOverlay.value = false;
-  await playAudio(2);
-  focusInput();
 };
 
 // 处理单个单词输入
@@ -836,50 +799,14 @@ const handleRestart = async () => {
   gap: 20px;
   max-width: 1000px;
   margin: 0 auto;
-  position: relative;
 }
 
-/* 点击开始覆盖层 */
-.start-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
-  z-index: 200;
+.learning-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.start-content {
-  text-align: center;
-  padding: 40px;
-}
-
-.start-content .el-icon {
-  color: #409eff;
-  margin-bottom: 20px;
-}
-
-.start-content h2 {
-  margin: 0 0 15px 0;
-  color: #303133;
-  font-size: 24px;
-}
-
-.start-content p {
-  margin: 8px 0;
-  color: #606266;
-  font-size: 16px;
-}
-
-.start-content .hint {
-  color: #909399;
-  font-size: 14px;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 /* 课程信息卡片 */
