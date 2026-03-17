@@ -1162,19 +1162,14 @@ const handleRestart = async () => {
   }
 
   .control-buttons .el-button {
-    min-width: 60px;
-    padding: 8px 10px;
-    font-size: 12px;
+    min-width: auto;
+    padding: 6px 10px;
+    font-size: 11px;
     white-space: nowrap;
   }
 
-  /* 按钮只显示图标 */
   .control-buttons .el-button :deep(.el-icon) {
-    margin-right: 0;
-  }
-
-  .control-buttons .el-button :deep(span:not(.el-icon)) {
-    display: none;
+    margin-right: 4px;
   }
 
   .feedback {
