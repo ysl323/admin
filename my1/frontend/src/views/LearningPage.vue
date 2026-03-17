@@ -194,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { 
@@ -312,7 +312,7 @@ const progressPercentage = computed(() => {
 onMounted(async () => {
   // 初始化学习状态管理
   learningStore.initialize();
-  
+
   await loadWords();
   if (words.value.length > 0) {
     // 启动学习会话
@@ -320,10 +320,28 @@ onMounted(async () => {
     initWordInputs();
     await playAudio(2); // 自动播放2遍
   }
+
+  // 监听键盘弹出，自动滚动到输入框
+  if (window.visualViewport) {
+    const handleResize = () => {
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.tagName === 'INPUT') {
+        setTimeout(() => {
+          activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    };
+    window.visualViewport.addEventListener('resize', handleResize);
+    window._viewportHandler = handleResize;
+  }
 });
 
 onUnmounted(() => {
   AudioManager.stop();
+  // 移除键盘监听
+  if (window.visualViewport && window._viewportHandler) {
+    window.visualViewport.removeEventListener('resize', window._viewportHandler);
+  }
 });
 
 // 加载单词列表
@@ -360,13 +378,24 @@ const initWordInputs = () => {
   wordErrors.value = new Array(wordParts.value.length).fill(false);
   currentWordIndex.value = 0;
   userAnswer.value = '';
-  
-  // 聚焦到第一个输入框
+
+  // 聚焦到第一个输入框并滚动到可视区域
   nextTick(() => {
+    let inputEl = null;
     if (wordParts.value.length === 1) {
-      answerInputRef.value?.focus();
+      inputEl = answerInputRef.value;
     } else if (wordInputRefs.value[0]) {
-      wordInputRefs.value[0].focus();
+      inputEl = wordInputRefs.value[0];
+    }
+
+    if (inputEl) {
+      inputEl.focus();
+      // 移动端：滚动到输入框位置
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
     }
   });
 };
@@ -1020,8 +1049,13 @@ const handleRestart = async () => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .learning-page {
+    padding-bottom: 140px; /* 为底部按钮留出空间 */
+  }
+
   .content {
     padding: 12px;
+    padding-bottom: 20px;
   }
 
   .breadcrumb {
@@ -1068,9 +1102,9 @@ const handleRestart = async () => {
   }
 
   .word-learning-content {
-    padding: 25px 15px;
-    gap: 20px;
-    min-height: 280px;
+    padding: 20px 15px;
+    gap: 16px;
+    min-height: auto;
   }
 
   .chinese-hint {
@@ -1096,16 +1130,51 @@ const handleRestart = async () => {
     flex-wrap: wrap;
   }
 
+  /* 底部固定按钮栏 */
+  .control-buttons-card {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    border-radius: 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    background: #fff;
+    margin: 0;
+  }
+
+  .control-buttons-card :deep(.el-card__body) {
+    padding: 8px 12px !important;
+  }
+
   .control-buttons {
-    gap: 8px;
-    padding: 8px 0;
-    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .control-buttons::-webkit-scrollbar {
+    display: none;
   }
 
   .control-buttons .el-button {
-    min-width: 70px;
-    padding: 8px 12px;
+    min-width: 60px;
+    padding: 8px 10px;
     font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* 按钮只显示图标 */
+  .control-buttons .el-button :deep(.el-icon) {
+    margin-right: 0;
+  }
+
+  .control-buttons .el-button :deep(span:not(.el-icon)) {
+    display: none;
   }
 
   .feedback {
