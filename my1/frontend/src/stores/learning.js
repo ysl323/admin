@@ -211,29 +211,35 @@ export const useLearningStore = defineStore('learning', {
         if (!this.strategy || !this.currentWord) {
           throw new Error('No active word or strategy')
         }
-        
-        // 标记单词为已学习
-        this.strategy.markWordLearned(wordId, correct)
-        
-        // 记录学习数据（这里可以扩展为调用API保存到后端）
-        const learningRecord = {
-          sessionId: this.sessionId,
-          wordId: wordId,
-          correct: correct,
-          timeSpent: timeSpent,
-          timestamp: new Date()
+
+        // 只有答对才标记为已学习并推进
+        if (correct) {
+          // 标记单词为已学习
+          this.strategy.markWordLearned(wordId, correct)
+
+          // 记录学习数据
+          const learningRecord = {
+            sessionId: this.sessionId,
+            wordId: wordId,
+            correct: correct,
+            timeSpent: timeSpent,
+            timestamp: new Date()
+          }
+
+          console.log('Answer submitted:', learningRecord)
+
+          // 加载下一个单词
+          await this.loadNextWord()
+
+          // 自动保存进度
+          if (this.preferences.autoSave) {
+            this.saveSessionState()
+          }
+        } else {
+          // 答错：只记录，不推进
+          console.log('Answer incorrect, staying on current word:', wordId)
         }
-        
-        console.log('Answer submitted:', learningRecord)
-        
-        // 加载下一个单词
-        await this.loadNextWord()
-        
-        // 自动保存进度
-        if (this.preferences.autoSave) {
-          this.saveSessionState()
-        }
-        
+
       } catch (error) {
         this.error = error.message
         console.error('Failed to submit answer:', error)
