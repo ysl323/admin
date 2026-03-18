@@ -11,8 +11,14 @@ export class SequentialStrategy extends BaseWordSelectionStrategy {
       return null;
     }
 
-    const word = this.words[this.currentIndex];
+    // 返回当前单词，不递增索引
+    // 索引在 markWordLearned() 中递增
+    return this.words[this.currentIndex];
+  }
+
+  markWordLearned(wordId: number): void {
+    super.markWordLearned(wordId);
+    // 标记已学习后，移动到下一个单词
     this.currentIndex++;
-    return word;
   }
 }

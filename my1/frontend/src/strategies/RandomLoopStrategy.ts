@@ -18,7 +18,13 @@ export class RandomLoopStrategy extends BaseWordSelectionStrategy {
       return null;
     }
 
-    const word = this.shuffledWords[this.currentIndex];
+    // 返回当前单词，不递增索引
+    return this.shuffledWords[this.currentIndex];
+  }
+
+  markWordLearned(wordId: number): void {
+    super.markWordLearned(wordId);
+    // 标记已学习后，移动到下一个单词
     this.currentIndex++;
 
     // 到达末尾时，重新打乱并重置索引
@@ -27,8 +33,6 @@ export class RandomLoopStrategy extends BaseWordSelectionStrategy {
       this.loopCount++;
       this.shuffleWords();
     }
-
-    return word;
   }
 
   reset(): void {
