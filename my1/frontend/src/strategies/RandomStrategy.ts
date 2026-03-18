@@ -13,6 +13,8 @@ export class RandomStrategy extends BaseWordSelectionStrategy {
     this.unlearnedInCurrentRound = new Set(words.map(w => w.id));
   }
 
+  private currentWord: Word | null = null;
+
   getNextWord(): Word | null {
     // 如果当前轮次所有单词都已学习，开始新一轮
     if (this.unlearnedInCurrentRound.size === 0) {
@@ -34,13 +36,22 @@ export class RandomStrategy extends BaseWordSelectionStrategy {
     }
 
     const randomIndex = Math.floor(Math.random() * unlearnedWords.length);
-    const selectedWord = unlearnedWords[randomIndex];
+    this.currentWord = unlearnedWords[randomIndex];
 
+    // 更新 currentIndex 为当前单词在原数组中的位置
+    const wordIndex = this.words.findIndex(w => w.id === this.currentWord!.id);
+    if (wordIndex !== -1) {
+      this.currentIndex = wordIndex;
+    }
+
+    return this.currentWord;
+  }
+
+  markWordLearned(wordId: number): void {
+    super.markWordLearned(wordId);
     // 从当前轮次的未学习集合中移除
-    this.unlearnedInCurrentRound.delete(selectedWord.id);
-    this.currentIndex++;
-
-    return selectedWord;
+    this.unlearnedInCurrentRound.delete(wordId);
+    this.currentWord = null;
   }
 
   reset(): void {

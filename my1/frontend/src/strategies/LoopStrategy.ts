@@ -11,7 +11,13 @@ export class LoopStrategy extends BaseWordSelectionStrategy {
       return null;
     }
 
-    const word = this.words[this.currentIndex];
+    // 返回当前单词，不递增索引
+    return this.words[this.currentIndex];
+  }
+
+  markWordLearned(wordId: number): void {
+    super.markWordLearned(wordId);
+    // 标记已学习后，移动到下一个单词
     this.currentIndex++;
 
     // 到达末尾时，重置索引并增加循环计数
@@ -19,7 +25,5 @@ export class LoopStrategy extends BaseWordSelectionStrategy {
       this.currentIndex = 0;
       this.loopCount++;
     }
-
-    return word;
   }
 }
