@@ -167,14 +167,32 @@
     <el-dialog v-model="wordDialog" :title="wordDialogTitle" width="500px">
       <el-form :model="wordForm" :rules="wordRules" ref="wordFormRef" label-width="100px">
         <el-form-item label="所属课程" prop="lessonId">
-          <el-select v-model="wordForm.lessonId" placeholder="请选择课程">
-            <el-option 
-              v-for="lesson in lessons" 
-              :key="lesson.id" 
-              :label="`${lesson.categoryName} - 第${lesson.lessonNumber}课`" 
-              :value="lesson.id" 
-            />
+          <el-select 
+            v-model="wordForm.lessonId" 
+            placeholder="请选择课程"
+            filterable
+            style="width: 100%"
+          >
+            <el-option-group
+              v-for="cat in categoriesWithLessons"
+              :key="cat.id"
+              :label="cat.name"
+            >
+              <el-option 
+                v-for="lesson in cat.lessons" 
+                :key="lesson.id" 
+                :label="`第${lesson.lessonNumber}课`" 
+                :value="lesson.id" 
+              />
+            </el-option-group>
           </el-select>
+          <div v-if="categoriesWithLessons.length === 0" class="empty-tip">
+            <el-alert type="warning" :closable="false" show-icon>
+              <template #title>
+                还没有课程，请先创建分类和课程后再添加单词
+              </template>
+            </el-alert>
+          </div>
         </el-form-item>
         <el-form-item label="英文" prop="english">
           <el-input v-model="wordForm.english" placeholder="请输入英文单词" />
@@ -193,7 +211,20 @@
     <el-dialog v-model="importDialog" title="一键导入课程" width="700px">
       <el-form :model="importForm" :rules="importRules" ref="importFormRef" label-width="100px">
         <el-form-item label="分类名称" prop="categoryName">
-          <el-input v-model="importForm.categoryName" placeholder="请输入分类名称（例如：新概念英语第一册）" />
+          <el-select 
+            v-model="importForm.categoryName" 
+            filterable 
+            allow-create 
+            default-first-option
+            placeholder="选择已有分类或输入新分类名称"
+          >
+            <el-option 
+              v-for="cat in categories" 
+              :key="cat.id" 
+              :label="cat.name" 
+              :value="cat.name" 
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="导入方式">
           <el-radio-group v-model="importMethod">
@@ -315,7 +346,7 @@ const importMethod = ref('text'); // 'text' | 'file'
 const fileList = ref([]);
 const uploadRef = ref(null);
 const importRules = {
-  categoryName: [{ required: true, message: '请输入分类名称', trigger: 'blur' }]
+  categoryName: [{ required: true, message: '请选择或输入分类名称', trigger: 'change' }]
 };
 
 // 计算属性
@@ -324,6 +355,14 @@ const filteredCategories = computed(() => {
   return categories.value.filter(cat => 
     cat.name.toLowerCase().includes(categorySearch.value.toLowerCase())
   );
+});
+
+// 按分类组织的课程列表（用于单词对话框的课程选择）
+const categoriesWithLessons = computed(() => {
+  return categories.value.map(cat => ({
+    ...cat,
+    lessons: lessons.value.filter(lesson => lesson.categoryId === cat.id)
+  })).filter(cat => cat.lessons.length > 0);
 });
 
 const filteredLessons = computed(() => {
@@ -907,5 +946,9 @@ h2 {
 
 .clickable-cell:hover {
   text-decoration: underline;
+}
+
+.empty-tip {
+  margin-top: 10px;
 }
 </style>
