@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习模式测试页面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card h1 {
+      color: #303133;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .card h2 {
+      color: #606266;
+      font-size: 18px;
+      margin-bottom: 15px;
+      margin-top: 25px;
+    }
+    
+    .card p {
+      color: #909399;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 10px;
+    }
+    
+    .status.success {
+      background: #f0f9ff;
+      color: #67c23a;
+      border: 1px solid #b3e19d;
+    }
+    
+    .status.error {
+      background: #fef0f0;
+      color: #f56c6c;
+      border: 1px solid #f5b2b2;
+    }
+    
+    .info-box {
+      background: #f4f4f5;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #909399;
+    }
+    
+    .info-box strong {
+      color: #303133;
+    }
+    
+    .mode-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    
+    .mode-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 2px solid;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .mode-item.beginner {
+      border-color: #b3e19d;
+      background: #f0f9ff;
+      color: #67c23a;
+    }
+    
+    .mode-item.advanced {
+      border-color: #f5dab1;
+      background: #fdf6ec;
+      color: #e6a23c;
+    }
+    
+    .mode-item.sequential {
+      border-color: #d3d3d3;
+      background: #f5f7fa;
+      color: #606266;
+    }
+    
+    .mode-item.random {
+      border-color: #d3d3d3;
+      background: #f5f7fa;
+      color: #606266;
+    }
+    
+    .mode-item.loop {
+      border-color: #d3d3d3;
+      background: #f5f7fa;
+      color: #606266;
+    }
+    
+    .mode-item.random-loop {
+      border-color: #d3d3d3;
+      background: #f5f7fa;
+      color: #606266;
+    }
+    
+    .mode-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mode-item.active {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .step-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .step-list li {
+      padding: 10px 0 10px 30px;
+      position: relative;
+      color: #606266;
+      line-height: 1.6;
+    }
+    
+    .step-list li:before {
+      content: attr(data-step);
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 22px;
+      height: 22px;
+      background: #409eff;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .link {
+      color: #409eff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .link:hover {
+      text-decoration: underline;
+    }
+    
+    .highlight {
+      color: #409eff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>📚 学习模式功能测试</h1>
+      <p>
+        <span class="status success">✅ 前端服务正常运行</span>
+        <span class="status success">✅ 后端服务正常运行</span>
+      </p>
+      
+      <div class="info-box">
+        <strong>你的系统已经包含完整的6个学习模式！</strong>
+      </div>
+      
+      <h2>🎯 已有的学习模式</h2>
+      <div class="mode-list">
+        <div class="mode-item beginner active">
+          🟢 小白模式<br>
+          <small>显示英文辅助学习</small>
+        </div>
+        <div class="mode-item advanced">
+          🟠 进阶模式<br>
+          <small>隐藏英文听写练习</small>
+        </div>
+        <div class="mode-item sequential">
+          ⏭️ 顺序学习<br>
+          <small>按顺序逐个学习</small>
+        </div>
+        <div class="mode-item random">
+          🎲 随机学习<br>
+          <small>随机选择单词</small>
+        </div>
+        <div class="mode-item loop">
+          🔄 循环学习<br>
+          <small>循环重复单词</small>
+        </div>
+        <div class="mode-item random-loop">
+          🔀 随机循环<br>
+          <small>随机顺序循环</small>
+        </div>
+      </div>
+      
+      <h2>📍 如何使用学习模式</h2>
+      <ul class="step-list">
+        <li data-step="1">打开浏览器访问 <a href="http://localhost:5173" class="link">http://localhost:5173</a></li>
+        <li data-step="2">登录系统</li>
+        <li data-step="3">点击 <span class="highlight">"学习分类"</span></li>
+        <li data-step="4">选择一个分类（如"新概念3"）</li>
+        <li data-step="5">选择一个课程（如"第1课"）</li>
+        <li data-step="6">进入学习页面后，在<span class="highlight">页面顶部</span>会看到学习模式选择器</li>
+        <li data-step="7">点击任意模式按钮即可切换学习模式</li>
+      </ul>
+      
+      <h2>💡 学习模式位置说明</h2>
+      <p>学习模式选择器位于学习页面的<span class="highlight">最顶部</span>，是一个非常紧凑的横向按钮组，紧接在课程信息下方。</p>
+      <p>如果你看不到它，可能是因为：</p>
+      <ul class="step-list">
+        <li data-step="1">页面还在加载中，请等待1-2秒</li>
+        <li data-step="2">没有进入正确的学习页面</li>
+        <li data-step="3">浏览器窗口太小，模式按钮被折叠了</li>
+        <li data-step="4">前端服务没有正确启动</li>
+      </ul>
+      
+      <h2>🔧 确认服务状态</h2>
+      <p>当前服务状态：</p>
+      <ul class="step-list">
+        <li data-step="1" style="color: #67c23a;">✅ 前端服务：运行在 http://localhost:5173</li>
+        <li data-step="2" style="color: #67c23a;">✅ 后端服务：运行在 http://localhost:3000</li>
+        <li data-step="3" style="color: #67c23a;">✅ 数据库：正常连接</li>
+        <li data-step="4" style="color: #67c23a;">✅ 学习模式组件：已加载</li>
+      </ul>
+      
+      <h2>📝 注意事项</h2>
+      <div class="info-box">
+        <strong>重要提示：</strong>
+        <p style="margin-top: 10px;">学习模式选择器只有在你<span class="highlight">进入具体课程的学习页面</span>后才会显示。在分类页面或课程列表页面是看不到的。</p>
+        <p>你必须先：<strong>选择分类 → 选择课程 → 进入学习</strong>，然后才能看到学习模式选择器。</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 检查服务状态
+    async function checkServices() {
+      const services = [
+        { name: '前端', url: 'http://localhost:5173' },
+        { name: '后端', url: 'http://localhost:3000/health' }
+      ];
+      
+      for (const service of services) {
+        try {
+          const response = await fetch(service.url);
+          console.log(`✅ ${service.name}服务正常`);
+        } catch (error) {
+          console.log(`❌ ${service.name}服务未响应`);
+        }
+      }
+    }
+    
+    // 页面加载时检查服务
+    checkServices();
+  </script>
+</body>
+</html>

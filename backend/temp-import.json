@@ -1,0 +1,35 @@
+{
+  "category": "测试分类",
+  "lessons": [
+    {
+      "lesson": 1,
+      "words": [
+        {
+          "en": "test",
+          "cn": "测试"
+        },
+        {
+          "en": "import",
+          "cn": "导入"
+        },
+        {
+          "en": "function",
+          "cn": "函数"
+        }
+      ]
+    },
+    {
+      "lesson": 2,
+      "words": [
+        {
+          "en": "database",
+          "cn": "数据库"
+        },
+        {
+          "en": "server",
+          "cn": "服务器"
+        }
+      ]
+    }
+  ]
+}

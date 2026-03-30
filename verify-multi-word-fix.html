@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多单词输入功能验证测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #409eff;
+            padding-bottom: 10px;
+        }
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #409eff;
+        }
+        .test-case h3 {
+            margin: 0 0 10px 0;
+            color: #409eff;
+        }
+        .test-steps {
+            margin: 10px 0;
+        }
+        .test-steps li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .expected {
+            background: #e7f4ff;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .expected strong {
+            color: #409eff;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .server-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .server-info a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .server-info a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #333;">多单词输入功能 - 验证测试清单</h1>
+    
+    <div class="server-info">
+        <strong>测试服务器：</strong>
+        <a href="http://47.97.185.117" target="_blank">http://47.97.185.117</a>
+        <br>
+        <strong>部署时间：</strong> 2025-03-09 16:30
+        <br>
+        <strong>测试账号：</strong> admin / admin123
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ 重要提示：</strong>
+        <ul>
+            <li>请使用Chrome或Edge浏览器进行测试</li>
+            <li>测试前请清除浏览器缓存（Ctrl+Shift+Delete）</li>
+            <li>每个测试用例都必须仔细验证</li>
+            <li>发现任何问题立即记录</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">测试准备</div>
+        <ul class="checklist">
+            <li>清除浏览器缓存</li>
+            <li>访问 http://47.97.185.117</li>
+            <li>使用 admin/admin123 登录</li>
+            <li>进入任意课程的学习页面</li>
+            <li>找到一个多单词的题目（例如："look at"）</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">核心功能测试</div>
+
+        <div class="test-case">
+            <h3>测试用例 1: 输入框宽度动态变化</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>找到一个多单词题目（如 "look at"）</li>
+                    <li>在第一个输入框中，<strong>逐个字符</strong>输入 "l"</li>
+                    <li>观察输入框宽度是否变化</li>
+                    <li>继续输入 "o", "o", "k"</li>
+                    <li>每输入一个字符，观察输入框宽度</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 输入框宽度应该随着输入字符数量<strong>实时增长</strong></li>
+                    <li>✅ 输入1个字符时，宽度应该比初始状态宽</li>
+                    <li>✅ 输入4个字符时，宽度应该比输入1个字符时更宽</li>
+                    <li>❌ 如果宽度始终不变，说明BUG未修复</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 2: Placeholder下划线动态减少</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>在第一个输入框中，观察初始placeholder（应该是4个下划线 "____"）</li>
+                    <li>输入 "l"，观察placeholder变化</li>
+                    <li>输入 "o"，观察placeholder变化</li>
+                    <li>输入 "o"，观察placeholder变化</li>
+                    <li>输入 "k"，观察placeholder变化</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 初始状态：placeholder显示 "____" (4个下划线)</li>
+                    <li>✅ 输入 "l" 后：placeholder显示 "___" (3个下划线)</li>
+                    <li>✅ 输入 "lo" 后：placeholder显示 "__" (2个下划线)</li>
+                    <li>✅ 输入 "loo" 后：placeholder显示 "_" (1个下划线)</li>
+                    <li>✅ 输入 "look" 后：placeholder显示 "" (无下划线)</li>
+                    <li>❌ 如果下划线数量不变，说明BUG未修复</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 3: 错误时只清空错误的单词</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>在第一个输入框输入正确的 "look"</li>
+                    <li>按空格键切换到第二个输入框</li>
+                    <li>在第二个输入框输入错误的 "xx"</li>
+                    <li>按空格键提交</li>
+                    <li>观察哪些输入框被清空</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 第一个输入框（"look"）应该<strong>保留</strong>内容</li>
+                    <li>✅ 第二个输入框（"xx"）应该被<strong>清空</strong></li>
+                    <li>✅ 第二个输入框应该显示红色错误状态</li>
+                    <li>✅ 焦点应该自动回到第二个输入框</li>
+                    <li>❌ 如果两个输入框都被清空，说明BUG未修复</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 4: 键盘敲击声音</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>确保浏览器音量已打开</li>
+                    <li>在输入框中输入任意字符</li>
+                    <li>听是否有键盘敲击声音</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 每次输入字符时应该听到短促的"哒"声</li>
+                    <li>✅ 声音应该清脆、不刺耳</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 5: 空格键切换输入框</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>在第一个输入框输入 "look"</li>
+                    <li>按空格键</li>
+                    <li>观察焦点是否切换到第二个输入框</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 焦点应该自动切换到第二个输入框</li>
+                    <li>✅ 第二个输入框应该有蓝色边框（获得焦点）</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">边界情况测试</div>
+
+        <div class="test-case">
+            <h3>测试用例 6: 删除字符时的行为</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>输入 "look"</li>
+                    <li>按退格键删除 "k"</li>
+                    <li>观察输入框宽度和placeholder</li>
+                    <li>继续删除字符，观察变化</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 删除字符时，输入框宽度应该<strong>缩小</strong></li>
+                    <li>✅ 删除字符时，placeholder下划线应该<strong>增加</strong></li>
+                    <li>✅ 删除 "k" 后：placeholder显示 "_"</li>
+                    <li>✅ 删除 "o" 后：placeholder显示 "__"</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 7: 输入超长字符</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>在输入框中输入超过目标长度的字符（如输入 "lookatme" 而目标是 "look"）</li>
+                    <li>观察输入框宽度</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 输入框宽度应该继续增长以容纳所有字符</li>
+                    <li>✅ 不应该出现文字溢出或被截断</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例 8: 快速连续输入</h3>
+            <div class="test-steps">
+                <strong>测试步骤：</strong>
+                <ol>
+                    <li>快速连续输入多个字符（如快速输入 "look"）</li>
+                    <li>观察UI是否流畅更新</li>
+                </ol>
+            </div>
+            <div class="expected">
+                <strong>预期结果：</strong>
+                <ul>
+                    <li>✅ 输入框宽度应该流畅变化，无卡顿</li>
+                    <li>✅ Placeholder应该实时更新</li>
+                    <li>✅ 不应该出现闪烁或跳动</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">验证清单</div>
+        <ul class="checklist">
+            <li>✅ 测试用例 1: 输入框宽度动态变化 - 通过</li>
+            <li>✅ 测试用例 2: Placeholder下划线动态减少 - 通过</li>
+            <li>✅ 测试用例 3: 错误时只清空错误的单词 - 通过</li>
+            <li>✅ 测试用例 4: 键盘敲击声音 - 通过</li>
+            <li>✅ 测试用例 5: 空格键切换输入框 - 通过</li>
+            <li>✅ 测试用例 6: 删除字符时的行为 - 通过</li>
+            <li>✅ 测试用例 7: 输入超长字符 - 通过</li>
+            <li>✅ 测试用例 8: 快速连续输入 - 通过</li>
+        </ul>
+    </div>
+
+    <div class="error">
+        <strong>❌ 如果发现任何问题，请记录：</strong>
+        <ul>
+            <li>问题描述：</li>
+            <li>复现步骤：</li>
+            <li>预期行为：</li>
+            <li>实际行为：</li>
+            <li>浏览器版本：</li>
+        </ul>
+    </div>
+
+    <div class="success">
+        <strong>✅ 如果所有测试通过：</strong>
+        <p>恭喜！多单词输入功能已完全修复，所有BUG已解决。</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">技术验证（开发者工具）</div>
+        <div class="test-steps">
+            <strong>使用浏览器开发者工具验证：</strong>
+            <ol>
+                <li>按 F12 打开开发者工具</li>
+                <li>切换到 Elements 标签</li>
+                <li>找到多单词输入框元素</li>
+                <li>输入字符时观察：
+                    <ul>
+                        <li>检查 <code>style</code> 属性中的 <code>width</code> 值是否实时变化</li>
+                        <li>检查 <code>placeholder</code> 属性值是否实时变化</li>
+                    </ul>
+                </li>
+                <li>切换到 Console 标签，检查是否有错误信息</li>
+            </ol>
+        </div>
+        <div class="expected">
+            <strong>预期结果：</strong>
+            <ul>
+                <li>✅ <code>width</code> 值应该随输入动态变化（如 60px → 80px → 100px）</li>
+                <li>✅ <code>placeholder</code> 值应该随输入动态变化（如 ____ → ___ → __）</li>
+                <li>✅ Console中不应该有任何错误或警告</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

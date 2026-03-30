@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态占位符测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .test-section h2 {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .word-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .word-input-wrapper {
+            flex: 1;
+        }
+        .word-input-wrapper label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            border: none;
+            border-bottom: 3px solid #409eff;
+            outline: none;
+            font-size: 24px;
+            text-align: center;
+            padding: 10px;
+            background: transparent;
+            color: #303133;
+            font-weight: 500;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        input:focus {
+            border-bottom-color: #66b1ff;
+            box-shadow: 0 2px 8px rgba(102, 177, 255, 0.3);
+        }
+        input.error {
+            border-bottom-color: #f56c6c;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        input::placeholder {
+            color: #c0c4cc;
+            font-size: 18px;
+            font-weight: normal;
+            letter-spacing: normal;
+        }
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e6f7ff;
+            border-left: 3px solid #1890ff;
+            color: #666;
+            font-size: 14px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .stat {
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #409eff;
+        }
+        button {
+            padding: 10px 20px;
+            background: #409eff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        button.danger {
+            background: #f56c6c;
+        }
+        button.danger:hover {
+            background: #f78989;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .result.correct {
+            background: #f0f9ff;
+            color: #67c23a;
+        }
+        .result.wrong {
+            background: #fef0f0;
+            color: #f56c6c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 动态占位符测试</h1>
+        
+        <div class="test-section">
+            <h2>测试1: 单个单词 "hello"</h2>
+            <div class="word-inputs">
+                <div class="word-input-wrapper">
+                    <label>目标单词: hello (5个字母)</label>
+                    <input type="text" id="input1" placeholder="_____">
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">目标长度</div>
+                    <div class="stat-value" id="target1">5</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">当前长度</div>
+                    <div class="stat-value" id="current1">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">剩余下划线</div>
+                    <div class="stat-value" id="remaining1">5</div>
+                </div>
+            </div>
+            <div class="info">
+                💡 输入字符时,下划线数量应该逐渐减少
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>测试2: 多个单词 "hello world"</h2>
+            <div class="word-inputs">
+                <div class="word-input-wrapper">
+                    <label>第一个单词: hello</label>
+                    <input type="text" id="input2a" placeholder="_____">
+                </div>
+                <div class="word-input-wrapper">
+                    <label>第二个单词: world</label>
+                    <input type="text" id="input2b" placeholder="_____">
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">第一个单词</div>
+                    <div class="stat-value" id="remaining2a">5</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">第二个单词</div>
+                    <div class="stat-value" id="remaining2b">5</div>
+                </div>
+            </div>
+            <button onclick="checkAnswer2()">检查答案</button>
+            <button class="danger" onclick="clearWrong2()">只清空错误的</button>
+            <div id="result2"></div>
+            <div class="info">
+                💡 测试: 输入 "hello test",点击"只清空错误的",应该只清空 "test"
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>测试3: 三个单词 "good morning sir"</h2>
+            <div class="word-inputs">
+                <div class="word-input-wrapper">
+                    <label>good</label>
+                    <input type="text" id="input3a" placeholder="____">
+                </div>
+                <div class="word-input-wrapper">
+                    <label>morning</label>
+                    <input type="text" id="input3b" placeholder="_______">
+                </div>
+                <div class="word-input-wrapper">
+                    <label>sir</label>
+                    <input type="text" id="input3c" placeholder="___">
+                </div>
+            </div>
+            <button onclick="checkAnswer3()">检查答案</button>
+            <button class="danger" onclick="clearWrong3()">只清空错误的</button>
+            <div id="result3"></div>
+            <div class="info">
+                💡 测试: 输入 "good evening madam",点击"只清空错误的",应该只清空 "evening" 和 "madam"
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 动态占位符函数
+        function getPlaceholder(currentLength, targetLength) {
+            const remainingLength = Math.max(targetLength - currentLength, 0);
+            return '_'.repeat(remainingLength);
+        }
+
+        // 测试1: 单个单词
+        const input1 = document.getElementById('input1');
+        input1.addEventListener('input', (e) => {
+            const currentLength = e.target.value.length;
+            const targetLength = 5;
+            const placeholder = getPlaceholder(currentLength, targetLength);
+            e.target.placeholder = placeholder;
+            
+            document.getElementById('current1').textContent = currentLength;
+            document.getElementById('remaining1').textContent = placeholder.length;
+        });
+
+        // 测试2: 两个单词
+        const input2a = document.getElementById('input2a');
+        const input2b = document.getElementById('input2b');
+        
+        input2a.addEventListener('input', (e) => {
+            const placeholder = getPlaceholder(e.target.value.length, 5);
+            e.target.placeholder = placeholder;
+            document.getElementById('remaining2a').textContent = placeholder.length;
+        });
+        
+        input2b.addEventListener('input', (e) => {
+            const placeholder = getPlaceholder(e.target.value.length, 5);
+            e.target.placeholder = placeholder;
+            document.getElementById('remaining2b').textContent = placeholder.length;
+        });
+
+        function checkAnswer2() {
+            const val1 = input2a.value.trim().toLowerCase();
+            const val2 = input2b.value.trim().toLowerCase();
+            const correct1 = val1 === 'hello';
+            const correct2 = val2 === 'world';
+            
+            const result = document.getElementById('result2');
+            if (correct1 && correct2) {
+                result.className = 'result correct';
+                result.textContent = '✅ 全部正确!';
+            } else {
+                const errors = [];
+                if (!correct1) errors.push('第一个单词');
+                if (!correct2) errors.push('第二个单词');
+                result.className = 'result wrong';
+                result.textContent = `❌ ${errors.join('、')} 错误`;
+            }
+        }
+
+        function clearWrong2() {
+            const val1 = input2a.value.trim().toLowerCase();
+            const val2 = input2b.value.trim().toLowerCase();
+            
+            if (val1 !== 'hello') {
+                input2a.value = '';
+                input2a.classList.add('error');
+                input2a.placeholder = '_____';
+                setTimeout(() => input2a.classList.remove('error'), 500);
+            }
+            
+            if (val2 !== 'world') {
+                input2b.value = '';
+                input2b.classList.add('error');
+                input2b.placeholder = '_____';
+                setTimeout(() => input2b.classList.remove('error'), 500);
+            }
+            
+            const result = document.getElementById('result2');
+            result.className = 'result';
+            result.textContent = '已清空错误的单词';
+        }
+
+        // 测试3: 三个单词
+        const input3a = document.getElementById('input3a');
+        const input3b = document.getElementById('input3b');
+        const input3c = document.getElementById('input3c');
+        
+        input3a.addEventListener('input', (e) => {
+            e.target.placeholder = getPlaceholder(e.target.value.length, 4);
+        });
+        
+        input3b.addEventListener('input', (e) => {
+            e.target.placeholder = getPlaceholder(e.target.value.length, 7);
+        });
+        
+        input3c.addEventListener('input', (e) => {
+            e.target.placeholder = getPlaceholder(e.target.value.length, 3);
+        });
+
+        function checkAnswer3() {
+            const val1 = input3a.value.trim().toLowerCase();
+            const val2 = input3b.value.trim().toLowerCase();
+            const val3 = input3c.value.trim().toLowerCase();
+            const correct1 = val1 === 'good';
+            const correct2 = val2 === 'morning';
+            const correct3 = val3 === 'sir';
+            
+            const result = document.getElementById('result3');
+            if (correct1 && correct2 && correct3) {
+                result.className = 'result correct';
+                result.textContent = '✅ 全部正确!';
+            } else {
+                const errors = [];
+                if (!correct1) errors.push('第一个');
+                if (!correct2) errors.push('第二个');
+                if (!correct3) errors.push('第三个');
+                result.className = 'result wrong';
+                result.textContent = `❌ ${errors.join('、')} 单词错误`;
+            }
+        }
+
+        function clearWrong3() {
+            const val1 = input3a.value.trim().toLowerCase();
+            const val2 = input3b.value.trim().toLowerCase();
+            const val3 = input3c.value.trim().toLowerCase();
+            
+            if (val1 !== 'good') {
+                input3a.value = '';
+                input3a.classList.add('error');
+                input3a.placeholder = '____';
+                setTimeout(() => input3a.classList.remove('error'), 500);
+            }
+            
+            if (val2 !== 'morning') {
+                input3b.value = '';
+                input3b.classList.add('error');
+                input3b.placeholder = '_______';
+                setTimeout(() => input3b.classList.remove('error'), 500);
+            }
+            
+            if (val3 !== 'sir') {
+                input3c.value = '';
+                input3c.classList.add('error');
+                input3c.placeholder = '___';
+                setTimeout(() => input3c.classList.remove('error'), 500);
+            }
+            
+            const result = document.getElementById('result3');
+            result.className = 'result';
+            result.textContent = '已清空错误的单词';
+        }
+    </script>
+</body>
+</html>

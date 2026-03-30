@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下划线动态长度测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f5f5f5;
+    }
+    
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      color: #303133;
+      margin-bottom: 30px;
+    }
+    
+    .test-section {
+      margin-bottom: 40px;
+      padding: 20px;
+      border: 2px solid #e4e7ed;
+      border-radius: 8px;
+    }
+    
+    .test-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #409eff;
+      margin-bottom: 20px;
+    }
+    
+    .chinese-hint {
+      font-size: 20px;
+      color: #606266;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    /* 多单词输入容器 */
+    .multi-word-input {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .word-part {
+      display: inline-block;
+    }
+    
+    /* 输入框容器 - 使用flex布局确保垂直排列 */
+    .word-input-container {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0px; /* BUG #9 修复：从5px改为0px */
+    }
+    
+    /* 下划线输入框样式 */
+    .underline-input {
+      border: none;
+      outline: none;
+      font-size: 32px;
+      text-align: center;
+      padding: 15px 10px;
+      background: transparent;
+      color: #303133;
+      font-weight: 500;
+      letter-spacing: 2px;
+      transition: all 0.3s;
+    }
+    
+    .underline-input:focus {
+      box-shadow: none;
+    }
+    
+    /* 下划线占位符 - 作为flex子元素显示在输入框下方 */
+    .underline-placeholder {
+      color: #409eff;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      text-align: center;
+      width: 100%;           /* BUG #8 修复：和输入框一样宽 */
+      overflow: hidden;      /* BUG #8 修复：防止溢出 */
+    }
+    
+    .info {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f0f9ff;
+      border-left: 4px solid #409eff;
+      font-size: 14px;
+      color: #606266;
+    }
+    
+    .info strong {
+      color: #409eff;
+    }
+    
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f9ff;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🐛 BUG #8 和 BUG #9 修复验证</h1>
+    
+    <!-- 测试1: 单个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 1: 单个单词 - "hello"</div>
+      <div class="chinese-hint">💬 你好</div>
+      
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input1"
+              type="text"
+              class="underline-input"
+              style="width: 100px;"
+            />
+            <div id="placeholder1" class="underline-placeholder">_____</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info">
+        <strong>验证点:</strong><br>
+        1. 初始状态：5个下划线（hello有5个字母）<br>
+        2. 输入 "h"：应该显示4个下划线<br>
+        3. 输入 "he"：应该显示3个下划线<br>
+        4. 输入 "hel"：应该显示2个下划线<br>
+        5. 输入 "hell"：应该显示1个下划线<br>
+        6. 输入 "hello"：应该显示0个下划线<br>
+        7. 下划线应该紧贴输入框下方（gap: 0px）
+      </div>
+      <div id="status1" class="status"></div>
+    </div>
+    
+    <!-- 测试2: 多个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 2: 多个单词 - "good morning"</div>
+      <div class="chinese-hint">💬 早上好</div>
+      
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input2a"
+              type="text"
+              class="underline-input"
+              style="width: 80px;"
+            />
+            <div id="placeholder2a" class="underline-placeholder">____</div>
+          </div>
+        </div>
+        
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input2b"
+              type="text"
+              class="underline-input"
+              style="width: 140px;"
+            />
+            <div id="placeholder2b" class="underline-placeholder">_______</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info">
+        <strong>验证点:</strong><br>
+        1. "good" 初始：4个下划线<br>
+        2. 输入 "g"：3个下划线<br>
+        3. 输入 "go"：2个下划线<br>
+        4. 输入 "goo"：1个下划线<br>
+        5. 输入 "good"：0个下划线<br>
+        6. "morning" 同理：7→6→5→4→3→2→1→0<br>
+        7. 两个输入框的下划线都应该紧贴输入框下方
+      </div>
+      <div id="status2" class="status"></div>
+    </div>
+    
+    <!-- 测试3: 三个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 3: 三个单词 - "how are you"</div>
+      <div class="chinese-hint">💬 你好吗</div>
+      
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input3a"
+              type="text"
+              class="underline-input"
+              style="width: 60px;"
+            />
+            <div id="placeholder3a" class="underline-placeholder">___</div>
+          </div>
+        </div>
+        
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input3b"
+              type="text"
+              class="underline-input"
+              style="width: 60px;"
+            />
+            <div id="placeholder3b" class="underline-placeholder">___</div>
+          </div>
+        </div>
+        
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              id="input3c"
+              type="text"
+              class="underline-input"
+              style="width: 60px;"
+            />
+            <div id="placeholder3c" class="underline-placeholder">___</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info">
+        <strong>验证点:</strong><br>
+        1. 每个单词都有3个字母，初始都是3个下划线<br>
+        2. 每输入一个字母，对应的下划线减少1个<br>
+        3. 所有下划线都应该紧贴输入框下方
+      </div>
+      <div id="status3" class="status"></div>
+    </div>
+  </div>
+  
+  <script>
+    // 测试1: 单个单词
+    const input1 = document.getElementById('input1');
+    const placeholder1 = document.getElementById('placeholder1');
+    const status1 = document.getElementById('status1');
+    const target1 = 'hello';
+    
+    input1.addEventListener('input', () => {
+      const currentLength = input1.value.length;
+      const remainingLength = Math.max(target1.length - currentLength, 0);
+      placeholder1.textContent = '_'.repeat(remainingLength);
+      
+      status1.textContent = `输入: "${input1.value}" (${currentLength}字符) | 剩余下划线: ${remainingLength}个 | 目标: "${target1}" (${target1.length}字符)`;
+    });
+    
+    // 测试2: 多个单词
+    const input2a = document.getElementById('input2a');
+    const placeholder2a = document.getElementById('placeholder2a');
+    const input2b = document.getElementById('input2b');
+    const placeholder2b = document.getElementById('placeholder2b');
+    const status2 = document.getElementById('status2');
+    const target2a = 'good';
+    const target2b = 'morning';
+    
+    input2a.addEventListener('input', () => {
+      const currentLength = input2a.value.length;
+      const remainingLength = Math.max(target2a.length - currentLength, 0);
+      placeholder2a.textContent = '_'.repeat(remainingLength);
+      updateStatus2();
+    });
+    
+    input2b.addEventListener('input', () => {
+      const currentLength = input2b.value.length;
+      const remainingLength = Math.max(target2b.length - currentLength, 0);
+      placeholder2b.textContent = '_'.repeat(remainingLength);
+      updateStatus2();
+    });
+    
+    function updateStatus2() {
+      const len2a = input2a.value.length;
+      const len2b = input2b.value.length;
+      const rem2a = Math.max(target2a.length - len2a, 0);
+      const rem2b = Math.max(target2b.length - len2b, 0);
+      status2.textContent = `Word1: "${input2a.value}" (${len2a}/${target2a.length}) 剩余${rem2a}个 | Word2: "${input2b.value}" (${len2b}/${target2b.length}) 剩余${rem2b}个`;
+    }
+    
+    // 测试3: 三个单词
+    const input3a = document.getElementById('input3a');
+    const placeholder3a = document.getElementById('placeholder3a');
+    const input3b = document.getElementById('input3b');
+    const placeholder3b = document.getElementById('placeholder3b');
+    const input3c = document.getElementById('input3c');
+    const placeholder3c = document.getElementById('placeholder3c');
+    const status3 = document.getElementById('status3');
+    const target3 = ['how', 'are', 'you'];
+    
+    input3a.addEventListener('input', () => {
+      const currentLength = input3a.value.length;
+      const remainingLength = Math.max(target3[0].length - currentLength, 0);
+      placeholder3a.textContent = '_'.repeat(remainingLength);
+      updateStatus3();
+    });
+    
+    input3b.addEventListener('input', () => {
+      const currentLength = input3b.value.length;
+      const remainingLength = Math.max(target3[1].length - currentLength, 0);
+      placeholder3b.textContent = '_'.repeat(remainingLength);
+      updateStatus3();
+    });
+    
+    input3c.addEventListener('input', () => {
+      const currentLength = input3c.value.length;
+      const remainingLength = Math.max(target3[2].length - currentLength, 0);
+      placeholder3c.textContent = '_'.repeat(remainingLength);
+      updateStatus3();
+    });
+    
+    function updateStatus3() {
+      const len3a = input3a.value.length;
+      const len3b = input3b.value.length;
+      const len3c = input3c.value.length;
+      const rem3a = Math.max(target3[0].length - len3a, 0);
+      const rem3b = Math.max(target3[1].length - len3b, 0);
+      const rem3c = Math.max(target3[2].length - len3c, 0);
+      status3.textContent = `"${input3a.value}" (${rem3a}个) | "${input3b.value}" (${rem3b}个) | "${input3c.value}" (${rem3c}个)`;
+    }
+    
+    // 初始化状态显示
+    status1.textContent = `输入: "" (0字符) | 剩余下划线: 5个 | 目标: "hello" (5字符)`;
+    updateStatus2();
+    updateStatus3();
+  </script>
+</body>
+</html>

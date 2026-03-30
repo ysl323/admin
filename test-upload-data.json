@@ -1,0 +1,7 @@
+[
+  {"lesson": 1, "question": 1, "english": "Excuse me!", "chinese": "打扰一下！"},
+  {"lesson": 1, "question": 2, "english": "Yes?", "chinese": "什么事？"},
+  {"lesson": 1, "question": 3, "english": "Is this your handbag?", "chinese": "这是你的手提包吗？"},
+  {"lesson": 2, "question": 1, "english": "Good morning.", "chinese": "早上好。"},
+  {"lesson": 2, "question": 2, "english": "Hi, Helen.", "chinese": "嗨，海伦。"}
+]
