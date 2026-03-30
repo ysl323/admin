@@ -5,6 +5,9 @@
       <button
         v-for="mode in availableModes"
         :key="mode.value"
+        :data-mode="mode.value"
+        :aria-label="mode.name + ': ' + mode.description"
+        :aria-pressed="currentMode === mode.value"
         :class="[
           'mode-button',
           { 'active': currentMode === mode.value },
@@ -35,7 +38,7 @@ export default {
   props: {
     currentMode: {
       type: String,
-      default: LearningMode.SEQUENTIAL,
+      default: LearningMode.BEGINNER,
       validator: (value) => Object.values(LearningMode).includes(value)
     },
     disabled: {
@@ -53,6 +56,18 @@ export default {
   data() {
     return {
       availableModes: [
+        {
+          value: LearningMode.BEGINNER,
+          name: '小白模式',
+          description: '初学者模式，显示英文辅助学习',
+          icon: 'el-icon-data-analysis'
+        },
+        {
+          value: LearningMode.ADVANCED,
+          name: '进阶模式',
+          description: '隐藏英文的顺序学习，适合听写练习',
+          icon: 'el-icon-s-custom'
+        },
         {
           value: LearningMode.SEQUENTIAL,
           name: '顺序学习',
@@ -116,14 +131,67 @@ export default {
 
 .mode-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+/* 6个按钮时，优先3列布局 */
+@media (min-width: 900px) {
+  .mode-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .mode-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .mode-buttons {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mode-button {
+    padding: 10px 8px;
+  }
+
+  .mode-icon {
+    font-size: 18px;
+    margin-right: 6px;
+    min-width: 24px;
+  }
+
+  .mode-name {
+    font-size: 13px;
+  }
+
+  .mode-description {
+    font-size: 11px;
+  }
+
+  /* 紧凑模式下的移动端优化 */
+  .compact-buttons {
+    gap: 2px;
+    height: 36px;
+  }
+
+  .mode-button.compact-button {
+    padding: 3px 6px;
+    min-height: 36px;
+  }
+
+  .mode-button.compact-button .mode-name {
+    font-size: 11px;
+  }
 }
 
 .mode-button {
   display: flex;
   align-items: center;
-  padding: 16px;
+  padding: 10px 8px;
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   background: white;
@@ -138,6 +206,25 @@ export default {
   transform: translateY(-1px);
 }
 
+/* 小白模式和进阶模式的hover状态保持原有边框色 */
+.mode-button[data-mode="beginner"]:hover:not(.disabled) {
+  border-color: #67c23a;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+}
+
+.mode-button[data-mode="advanced"]:hover:not(.disabled) {
+  border-color: #e6a23c;
+  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
+}
+
+.mode-button.active[data-mode="beginner"]:hover {
+  border-color: #67c23a;
+}
+
+.mode-button.active[data-mode="advanced"]:hover {
+  border-color: #e6a23c;
+}
+
 .mode-button.active {
   border-color: #409eff;
   background: #ecf5ff;
@@ -150,17 +237,53 @@ export default {
 }
 
 .mode-icon {
-  margin-right: 12px;
-  font-size: 24px;
+  margin-right: 6px;
+  font-size: 18px;
   color: #409eff;
-  min-width: 32px;
+  min-width: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.mode-button.active .mode-icon {
+/* 小白模式和进阶模式的特殊图标样式 */
+.mode-button[data-mode="beginner"] .mode-icon {
+  color: #67c23a;
+}
+
+.mode-button[data-mode="advanced"] .mode-icon {
+  color: #e6a23c;
+}
+
+.mode-button.active[data-mode="beginner"] .mode-icon {
+  color: #67c23a;
+}
+
+.mode-button.active[data-mode="advanced"] .mode-icon {
+  color: #e6a23c;
+}
+
+.mode-button.active:not([data-mode="beginner"]):not([data-mode="advanced"]) .mode-name {
   color: #409eff;
+}
+
+/* 小白模式和进阶模式的激活文字颜色 */
+.mode-button.active[data-mode="beginner"] .mode-name {
+  color: #67c23a;
+}
+
+.mode-button.active[data-mode="advanced"] .mode-name {
+  color: #e6a23c;
+}
+
+.mode-button.active[data-mode="beginner"] {
+  border-color: #67c23a;
+  background: #e8f5e9; /* 绿色系背景 */
+}
+
+.mode-button.active[data-mode="advanced"] {
+  border-color: #e6a23c;
+  background: #fdf6ec;
 }
 
 .mode-info {
@@ -168,20 +291,16 @@ export default {
 }
 
 .mode-name {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .mode-description {
-  font-size: 14px;
+  font-size: 12px;
   color: #666;
-  line-height: 1.4;
-}
-
-.mode-button.active .mode-name {
-  color: #409eff;
+  line-height: 1.3;
 }
 
 /* 紧凑模式样式 */
@@ -194,16 +313,16 @@ export default {
 
 .compact-buttons {
   display: flex;
-  gap: 4px;
-  height: 44px;
+  gap: 3px;
+  height: 40px;
 }
 
 .mode-button.compact-button {
-  padding: 6px 12px;
+  padding: 4px 8px;
   border: 1px solid #e1e5e9;
   border-radius: 4px;
   background: white;
-  min-height: 44px;
+  min-height: 40px;
   flex: 1;
   display: flex;
   align-items: center;
@@ -211,7 +330,7 @@ export default {
 }
 
 .mode-button.compact-button .mode-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   margin-bottom: 0;
   white-space: nowrap;
@@ -232,28 +351,32 @@ export default {
 .mode-button.compact-button.active .mode-name {
   color: #409eff;
 }
-@media (max-width: 768px) {
-  .mode-buttons {
-    grid-template-columns: 1fr;
-  }
-  
-  .mode-button {
-    padding: 12px;
-  }
-  
-  .mode-icon {
-    font-size: 20px;
-    margin-right: 8px;
-    min-width: 24px;
-  }
-  
-  .mode-name {
-    font-size: 14px;
-  }
-  
-  .mode-description {
-    font-size: 12px;
-  }
+
+/* 紧凑模式下小白和进阶模式的特殊样式 */
+.mode-button.compact-button[data-mode="beginner"] {
+  border-color: #b3e19d;
+}
+
+.mode-button.compact-button[data-mode="advanced"] {
+  border-color: #f5dab1;
+}
+
+.mode-button.compact-button.active[data-mode="beginner"] {
+  border-color: #67c23a;
+  background: #e8f5e9;
+}
+
+.mode-button.compact-button.active[data-mode="advanced"] {
+  border-color: #e6a23c;
+  background: #fdf6ec;
+}
+
+.mode-button.compact-button.active[data-mode="beginner"] .mode-name {
+  color: #67c23a;
+}
+
+.mode-button.compact-button.active[data-mode="advanced"] .mode-name {
+  color: #e6a23c;
 }
 
 /* 无障碍支持 */

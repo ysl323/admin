@@ -24,9 +24,10 @@ const LearningSession = sequelize.define('LearningSession', {
     }
   },
   mode: {
-    type: DataTypes.ENUM('sequential', 'random', 'loop', 'random_loop'),
+    type: DataTypes.ENUM('beginner', 'advanced', 'sequential', 'random', 'loop', 'random_loop'),
     allowNull: false,
-    defaultValue: 'sequential'
+    defaultValue: 'beginner',
+    comment: '学习模式：beginner(小白模式), advanced(进阶模式), sequential(顺序学习), random(随机学习), loop(循环学习), random_loop(随机循环)'
   },
   status: {
     type: DataTypes.ENUM('idle', 'active', 'paused', 'completed'),

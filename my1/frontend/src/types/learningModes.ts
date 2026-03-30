@@ -6,14 +6,18 @@
 
 /**
  * 学习模式枚举
- * 
- * 定义四种学习模式：
+ *
+ * 定义六种学习模式：
+ * - BEGINNER: 小白模式，初学者模式，显示英文辅助学习
+ * - ADVANCED: 进阶模式，进阶学习者，隐藏英文听写练习
  * - SEQUENTIAL: 顺序模式，按原始顺序学习单词
  * - RANDOM: 随机模式，随机选择单词学习
  * - LOOP: 循环模式，按顺序循环学习所有单词
  * - RANDOM_LOOP: 随机循环模式，随机顺序循环学习所有单词
  */
 export enum LearningMode {
+  BEGINNER = 'beginner',
+  ADVANCED = 'advanced',
   SEQUENTIAL = 'sequential',
   RANDOM = 'random',
   LOOP = 'loop',

@@ -3,9 +3,12 @@ import { SequentialStrategy } from '../strategies/SequentialStrategy'
 import { RandomStrategy } from '../strategies/RandomStrategy'
 import { LoopStrategy } from '../strategies/LoopStrategy'
 import { RandomLoopStrategy } from '../strategies/RandomLoopStrategy'
+import wordMasteryService from '../services/wordMastery'
 
 // 学习模式枚举
 export const LearningMode = {
+  BEGINNER: 'beginner',
+  ADVANCED: 'advanced',
   SEQUENTIAL: 'sequential',
   RANDOM: 'random',
   LOOP: 'loop',
@@ -23,19 +26,19 @@ export const SessionStatus = {
 export const useLearningStore = defineStore('learning', {
   state: () => ({
     // 当前学习模式
-    mode: LearningMode.SEQUENTIAL,
-    
+    mode: LearningMode.BEGINNER,
+
     // 会话信息
     session: null,
     sessionId: null,
     lessonId: null,
     status: SessionStatus.IDLE,
-    
+
     // 当前单词和策略
     currentWord: null,
     strategy: null,
     words: [],
-    
+
     // 学习进度
     progress: {
       currentIndex: 0,
@@ -44,14 +47,18 @@ export const useLearningStore = defineStore('learning', {
       loopCount: 0,
       sessionStartTime: null
     },
-    
+
     // UI 状态
     isLoading: false,
     error: null,
-    
+
+    // 单词掌握状态
+    masteredWords: [], // 使用数组存储已掌握的单词ID，便于序列化
+    masteryLoading: false,
+
     // 本地存储的学习偏好
     preferences: {
-      lastMode: LearningMode.SEQUENTIAL,
+      lastMode: LearningMode.BEGINNER,
       autoSave: true,
       showProgress: true
     }
@@ -70,6 +77,8 @@ export const useLearningStore = defineStore('learning', {
     // 当前模式的显示名称
     currentModeDisplayName: (state) => {
       const names = {
+        [LearningMode.BEGINNER]: '小白模式',
+        [LearningMode.ADVANCED]: '进阶模式',
         [LearningMode.SEQUENTIAL]: '顺序学习',
         [LearningMode.RANDOM]: '随机学习',
         [LearningMode.LOOP]: '循环学习',
@@ -85,6 +94,35 @@ export const useLearningStore = defineStore('learning', {
     sessionDuration: (state) => {
       if (!state.progress.sessionStartTime) return 0
       return Date.now() - state.progress.sessionStartTime.getTime()
+    },
+
+    // 当前单词是否已掌握
+    isCurrentWordMastered: (state) => {
+      return state.currentWord ? state.masteredWords.includes(state.currentWord.id) : false
+    },
+
+    // 当前模式是否为小白模式
+    isBeginnerMode: (state) => {
+      return state.mode === LearningMode.BEGINNER
+    },
+
+    // 当前模式是否为进阶模式
+    isAdvancedMode: (state) => {
+      return state.mode === LearningMode.ADVANCED
+    },
+
+    // 当前单词在小白模式下是否应该显示英文
+    shouldShowEnglishForCurrentWord: (state) => {
+      // 小白模式：未掌握的单词显示英文，已掌握的隐藏
+      // 进阶/其他模式：默认隐藏英文
+      if (!state.isBeginnerMode) {
+        return false;
+      }
+      if (!state.currentWord) {
+        return false; // 没有当前单词时不显示，避免渲染错误
+      }
+      // 小白模式下，已掌握的单词隐藏英文
+      return !state.masteredWords.includes(state.currentWord.id);
     }
   },
 
@@ -98,6 +136,8 @@ export const useLearningStore = defineStore('learning', {
     // 创建学习策略实例
     createStrategy(mode) {
       switch (mode) {
+        case LearningMode.BEGINNER:
+        case LearningMode.ADVANCED:
         case LearningMode.SEQUENTIAL:
           return new SequentialStrategy()
         case LearningMode.RANDOM:
@@ -116,25 +156,28 @@ export const useLearningStore = defineStore('learning', {
       try {
         this.isLoading = true
         this.error = null
-        
+
         // 使用指定模式或当前模式
         const sessionMode = mode || this.mode
-        
+
         // 验证输入
         if (!lessonId || !words || words.length === 0) {
           throw new Error('Invalid lesson or words data')
         }
-        
+
         // 创建会话ID
         this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         this.lessonId = lessonId
         this.mode = sessionMode
         this.words = [...words]
-        
+
+        // 加载单词掌握状态
+        await this.loadMasteryData(lessonId)
+
         // 创建并初始化策略
         this.strategy = this.createStrategy(sessionMode)
         this.strategy.initialize(words)
-        
+
         // 初始化进度
         this.progress = {
           currentIndex: 0,
@@ -143,19 +186,19 @@ export const useLearningStore = defineStore('learning', {
           loopCount: 0,
           sessionStartTime: new Date()
         }
-        
+
         // 设置会话状态
         this.status = SessionStatus.ACTIVE
-        
+
         // 加载第一个单词
         await this.loadNextWord()
-        
+
         // 保存偏好设置
         this.preferences.lastMode = sessionMode
         this.savePreferences()
-        
+
         console.log(`Learning session started: ${this.sessionId}, mode: ${sessionMode}, words: ${words.length}`)
-        
+
       } catch (error) {
         this.error = error.message
         this.status = SessionStatus.IDLE
@@ -427,9 +470,231 @@ export const useLearningStore = defineStore('learning', {
         loopCount: this.progress.loopCount,
         progressPercentage: this.progressPercentage,
         sessionDuration: this.sessionDuration,
-        wordsPerMinute: this.sessionDuration > 0 ? 
+        wordsPerMinute: this.sessionDuration > 0 ?
           (this.progress.learnedCount / (this.sessionDuration / 60000)).toFixed(1) : 0
       }
+    },
+
+    // 标记单词为已掌握
+    async markAsMastered(wordId) {
+      try {
+        if (!wordId) {
+          throw new Error('Invalid word ID');
+        }
+
+        this.masteryLoading = true;
+
+        // 添加到已掌握数组（去重）
+        const wasAlreadyMastered = this.masteredWords.includes(wordId);
+        if (!wasAlreadyMastered) {
+          this.masteredWords.push(wordId);
+
+          // 立即保存到本地存储
+          this.saveMasteryData();
+
+          // 尝试同步到服务器（异步，不阻塞UI）
+          if (this.lessonId) {
+            wordMasteryService.markAsMastered(this.lessonId, wordId)
+              .then(() => {
+                console.log(`Word ${wordId} synced to server`);
+              })
+              .catch((error) => {
+                console.warn(`Failed to sync word ${wordId} to server:`, error);
+                // 失败了也没关系，本地已有保存
+              });
+          }
+        }
+
+        console.log(`Word ${wordId} marked as mastered, was already mastered: ${wasAlreadyMastered}`);
+
+        return {
+          success: true,
+          isNew: !wasAlreadyMastered,
+          wasAlreadyMastered
+        };
+      } catch (error) {
+        console.error('Failed to mark word as mastered:', error);
+        this.error = error.message;
+        return { success: false, isNew: false, wasAlreadyMastered: false };
+      } finally {
+        this.masteryLoading = false;
+      }
+    },
+
+    // 取消单词掌握状态（用于误操作撤销）
+    async unmarkAsMastered(wordId) {
+      try {
+        if (!wordId) {
+          throw new Error('Invalid word ID');
+        }
+
+        this.masteryLoading = true;
+
+        // 从已掌握数组中移除
+        const index = this.masteredWords.indexOf(wordId);
+        if (index !== -1) {
+          this.masteredWords.splice(index, 1);
+
+          // 更新本地存储
+          this.saveMasteryData();
+
+          // 尝试同步到服务器（异步）
+          wordMasteryService.unmarkAsMastered(wordId)
+            .then(() => {
+              console.log(`Word ${wordId} unmarked on server`);
+            })
+            .catch((error) => {
+              console.warn(`Failed to unmark word ${wordId} on server:`, error);
+            });
+
+          console.log(`Word ${wordId} unmarked as mastered`);
+          return true;
+        }
+
+        console.log(`Word ${wordId} was not marked as mastered`);
+        return false;
+      } catch (error) {
+        console.error('Failed to unmark word as mastered:', error);
+        this.error = error.message;
+        return false;
+      } finally {
+        this.masteryLoading = false;
+      }
+    },
+
+    // 同步离线的掌握数据到服务器
+    async syncOfflineMasteryData() {
+      try {
+        // 获取所有课程的本地掌握数据
+        const offlineData = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.startsWith('word_mastery_')) {
+            try {
+              const saved = localStorage.getItem(key);
+              const masteryData = JSON.parse(saved);
+              const lessonId = parseInt(key.replace('word_mastery_', ''));
+
+              if (masteryData.masteredIds && masteryData.masteredIds.length > 0) {
+                masteryData.masteredIds.forEach(wordId => {
+                  offlineData.push({
+                    lessonId,
+                    wordId,
+                    masteredAt: masteryData.updatedAt
+                  });
+                });
+              }
+            } catch (error) {
+              console.warn(`Failed to parse offline mastery data for key ${key}:`, error);
+            }
+          }
+        }
+
+        if (offlineData.length === 0) {
+          console.log('No offline mastery data to sync');
+          return { synced: 0, failed: 0 };
+        }
+
+        // 批量同步到服务器
+        const response = await wordMasteryService.syncMastery(offlineData);
+
+        console.log(`Synced offline mastery data: ${response.data?.synced || 0} synced, ${response.data?.failed || 0} failed`);
+
+        return {
+          synced: response.data?.synced || 0,
+          failed: response.data?.failed || 0
+        };
+      } catch (error) {
+        console.error('Failed to sync offline mastery data:', error);
+        return { synced: 0, failed: 0 };
+      }
+    },
+
+    // 检查单词是否已掌握
+    checkMasteryStatus(wordId) {
+      return this.masteredWords.includes(wordId);
+    },
+
+    // 加载课程的掌握状态数据
+    async loadMasteryData(lessonId) {
+      try {
+        // 无论lessonId是否为空，都重置掌握状态
+        this.masteredWords = [];
+
+        if (!lessonId) {
+          return;
+        }
+
+        this.masteryLoading = true;
+
+        // 首先从本地存储加载（快速显示）
+        const localKey = `word_mastery_${lessonId}`;
+        const localSaved = localStorage.getItem(localKey);
+
+        if (localSaved) {
+          try {
+            const localMasteryData = JSON.parse(localSaved);
+            this.masteredWords = localMasteryData.masteredIds || [];
+            console.log(`Loaded ${this.masteredWords.length} mastered words from local storage for lesson ${lessonId}`);
+          } catch (error) {
+            console.warn('Failed to parse local mastery data:', error);
+          }
+        }
+
+        // 然后从服务器同步最新数据
+        try {
+          const serverMasteredIds = await wordMasteryService.getLessonMastery(lessonId);
+          this.masteredWords = serverMasteredIds;
+
+          // 更新本地存储
+          this.saveMasteryData();
+
+          console.log(`Synced ${this.masteredWords.length} mastered words from server for lesson ${lessonId}`);
+        } catch (error) {
+          console.warn('Failed to sync mastery data from server:', error);
+          // 服务器同步失败，继续使用本地数据
+        }
+
+      } catch (error) {
+        console.error('Failed to load mastery data:', error);
+        this.masteredWords = [];
+      } finally {
+        this.masteryLoading = false;
+      }
+    },
+
+    // 保存掌握状态到本地存储
+    saveMasteryData() {
+      try {
+        if (!this.lessonId) {
+          return;
+        }
+
+        const key = `word_mastery_${this.lessonId}`;
+        const masteryData = {
+          lessonId: this.lessonId,
+          masteredIds: this.masteredWords,
+          updatedAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(key, JSON.stringify(masteryData));
+
+        console.log(`Mastery data saved: ${this.masteredWords.length} words`);
+      } catch (error) {
+        console.error('Failed to save mastery data:', error);
+      }
+    },
+
+    // 清除掌握状态
+    clearMasteryData() {
+      this.masteredWords = [];
+
+      if (this.lessonId) {
+        const key = `word_mastery_${this.lessonId}`;
+        localStorage.removeItem(key);
+      }
+
+      console.log('Mastery data cleared');
     }
   }
 })

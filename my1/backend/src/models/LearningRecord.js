@@ -54,8 +54,9 @@ const LearningRecord = sequelize.define('LearningRecord', {
     defaultValue: 1
   },
   mode: {
-    type: DataTypes.ENUM('sequential', 'random', 'loop', 'random_loop'),
-    allowNull: false
+    type: DataTypes.ENUM('beginner', 'advanced', 'sequential', 'random', 'loop', 'random_loop'),
+    allowNull: false,
+    comment: '学习模式：beginner(小白模式), advanced(进阶模式), sequential(顺序学习), random(随机学习), loop(循环学习), random_loop(随机循环)'
   },
   timestamp: {
     type: DataTypes.DATE,

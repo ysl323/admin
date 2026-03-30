@@ -69,8 +69,8 @@
               <span>{{ currentWord.chinese }}</span>
             </div>
 
-            <!-- 英文单词（答对或显示答案后显示） -->
-            <div v-if="showAnswer" class="english-word">
+            <!-- 英文单词（小白模式下：未掌握显示，已掌握隐藏；答对或显示答案后显示） -->
+            <div v-if="showEnglish" class="english-word">
               <h1>{{ currentWord.english }}</h1>
             </div>
 
@@ -138,6 +138,17 @@
             <el-button :disabled="currentIndex === 0" @click="handlePrevious">
               <el-icon><ArrowLeft /></el-icon>
               上一题
+            </el-button>
+
+            <!-- 掌握按钮：仅小白模式显示 -->
+            <el-button
+              v-if="learningStore.isBeginnerMode"
+              type="success"
+              :loading="learningStore.masteryLoading"
+              @click="handleMarkAsMastered"
+            >
+              <el-icon><CircleCheckFilled /></el-icon>
+              {{ learningStore.isCurrentWordMastered ? '已掌握' : '掌握' }}
             </el-button>
 
             <el-button type="primary" :loading="isPlaying" @click="handlePlayAudio">
@@ -306,6 +317,22 @@ const currentWord = computed(() => words.value[currentIndex.value] || {});
 const progressPercentage = computed(() => {
   if (words.value.length === 0) return 0;
   return Math.round(((currentIndex.value + 1) / words.value.length) * 100);
+});
+
+// 英文显示逻辑：根据模式、掌握状态和是否显示答案决定
+const showEnglish = computed(() => {
+  // 如果手动显示了答案，始终显示
+  if (showAnswer.value) {
+    return true;
+  }
+
+  // 小白模式下，根据掌握状态决定
+  if (learningStore.isBeginnerMode) {
+    return learningStore.shouldShowEnglishForCurrentWord;
+  }
+
+  // 其他模式下，不显示英文（需要听写）
+  return false;
 });
 
 // 生命周期
@@ -756,6 +783,55 @@ const handleReset = async () => {
   await playAudio(2);
 };
 
+// 标记当前单词为已掌握
+const handleMarkAsMastered = async () => {
+  try {
+    if (!currentWord.value.id) {
+      ElMessage.warning('当前没有单词');
+      return;
+    }
+
+    const isMastered = learningStore.isCurrentWordMastered;
+
+    if (isMastered) {
+      // 已掌握，提示用户
+      ElMessage.info('该单词已经掌握');
+      return;
+    }
+
+    // 标记为已掌握
+    const result = await learningStore.markAsMastered(currentWord.value.id);
+
+    if (result.success) {
+      if (result.isNew) {
+        ElMessage.success('已标记为掌握，英文已隐藏');
+      } else {
+        ElMessage.info('该单词已经是掌握状态');
+      }
+
+      // 重置输入框和反馈
+      userAnswer.value = '';
+      wordInputs.value = wordParts.value.map(() => '');
+      wordErrors.value = [];
+      feedback.value.show = false;
+
+      // 小白模式下，标记为掌握后立即隐藏英文
+      // showEnglish computed属性会自动响应store状态变化
+      // 但我们需要确保输入框可以正常使用
+      await nextTick();
+
+      // 聚焦输入框
+      if (wordInputRefs.value[0]) {
+        wordInputRefs.value[0].focus();
+      } else if (answerInputRef.value) {
+        answerInputRef.value.focus();
+      }
+    }
+  } catch (error) {
+    ElMessage.error('标记失败：' + error.message);
+  }
+};
+
 // 返回课程列表
 const goBackToLessons = () => {
   router.push(`/categories/${lessonInfo.value.categoryId}/lessons`);
@@ -770,6 +846,21 @@ const handleRestart = async () => {
   initWordInputs();
   await playAudio(2);
 };
+
+// 监听模式切换，重置相关状态
+watch(() => learningStore.mode, async () => {
+  // 切换模式时重置showAnswer，让computed属性重新计算
+  showAnswer.value = false;
+  feedback.value.show = false;
+
+  // 等待DOM更新后聚焦输入框
+  await nextTick();
+  if (wordInputRefs.value[0]) {
+    wordInputRefs.value[0].focus();
+  } else if (answerInputRef.value) {
+    answerInputRef.value.focus();
+  }
+});
 </script>
 
 <style scoped>
