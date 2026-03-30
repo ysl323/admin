@@ -69,6 +69,11 @@
               <span>{{ currentWord.chinese }}</span>
             </div>
 
+            <!-- 音标显示 -->
+            <div v-if="currentWord.phonetic" class="phonetic-display">
+              <span class="phonetic-symbol">{{ currentWord.phonetic }}</span>
+            </div>
+
             <!-- 英文单词（小白模式下：未掌握显示，已掌握隐藏；答对或显示答案后显示） -->
             <div v-if="showEnglish" class="english-word">
               <h1>{{ currentWord.english }}</h1>
@@ -990,6 +995,19 @@ watch(() => learningStore.mode, async () => {
   font-weight: 500;
 }
 
+.phonetic-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.phonetic-symbol {
+  font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;
+  font-size: 18px;
+  color: #909399;
+  letter-spacing: 1px;
+}
+
 .english-word h1 {
   margin: 0;
   font-size: 42px;
@@ -1204,6 +1222,10 @@ watch(() => learningStore.mode, async () => {
 
   .chinese-hint :deep(.el-icon) {
     font-size: 20px;
+  }
+
+  .phonetic-symbol {
+    font-size: 14px;
   }
 
   .english-word h1 {

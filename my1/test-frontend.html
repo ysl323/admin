@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程数据测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .status-ok {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status-error {
+            background-color: #f44336;
+            color: white;
+        }
+        .status-waiting {
+            background-color: #ff9800;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 课程数据测试页面</h1>
+
+        <div class="section info">
+            <h2>测试说明</h2>
+            <p>这个页面用于测试后端API是否正常工作，以及数据库中的课程数据是否可以正常获取。</p>
+        </div>
+
+        <div class="section">
+            <h2>测试操作</h2>
+            <button onclick="testBackend()">测试后端连接</button>
+            <button onclick="testCategories()">获取分类列表</button>
+            <button onclick="testLessons(10)">获取新概念3课程</button>
+            <button onclick="testLessons(11)">获取esp32-idf课程</button>
+        </div>
+
+        <div id="results">
+            <h2>测试结果</h2>
+            <div id="status" class="status status-waiting">等待测试...</div>
+            <pre id="output">点击上面的按钮开始测试...</pre>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const outputEl = document.getElementById('output');
+
+        function updateStatus(status, message) {
+            statusEl.className = 'status status-' + status;
+            statusEl.textContent = message;
+        }
+
+        function updateOutput(data) {
+            outputEl.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function testBackend() {
+            updateStatus('waiting', '测试中...');
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+                updateStatus('ok', '✅ 后端连接成功');
+                updateOutput(data);
+            } catch (error) {
+                updateStatus('error', '❌ 后端连接失败');
+                updateOutput({ error: error.message });
+            }
+        }
+
+        async function testCategories() {
+            updateStatus('waiting', '测试中...');
+            try {
+                const response = await fetch('http://localhost:3000/api/learning/categories', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    updateStatus('ok', `✅ 成功获取 ${data.categories.length} 个分类`);
+                    updateOutput(data);
+                } else {
+                    updateStatus('error', '❌ 获取分类失败');
+                    updateOutput(data);
+                }
+            } catch (error) {
+                updateStatus('error', '❌ 请求失败');
+                updateOutput({ error: error.message });
+            }
+        }
+
+        async function testLessons(categoryId) {
+            updateStatus('waiting', '测试中...');
+            try {
+                const response = await fetch(`http://localhost:3000/api/learning/categories/${categoryId}/lessons`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    updateStatus('ok', `✅ 成功获取 ${data.lessons.length} 个课程`);
+                    updateOutput(data);
+                } else {
+                    updateStatus('error', '❌ 获取课程失败');
+                    updateOutput(data);
+                }
+            } catch (error) {
+                updateStatus('error', '❌ 请求失败');
+                updateOutput({ error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>

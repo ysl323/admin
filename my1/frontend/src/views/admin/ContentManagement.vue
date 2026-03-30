@@ -116,8 +116,14 @@
 
       <el-table :data="filteredWords" stripe>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="english" label="英文" width="200" />
-        <el-table-column prop="chinese" label="中文" width="200" />
+        <el-table-column prop="english" label="英文" width="180" />
+        <el-table-column prop="phonetic" label="音标" width="150">
+          <template #default="{ row }">
+            <span v-if="row.phonetic" class="phonetic-text">{{ row.phonetic }}</span>
+            <span v-else class="empty-text">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="chinese" label="中文" width="180" />
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button link size="small" @click="editWord(row)">编辑</el-button>
@@ -197,6 +203,9 @@
         <el-form-item label="英文" prop="english">
           <el-input v-model="wordForm.english" placeholder="请输入英文单词" />
         </el-form-item>
+        <el-form-item label="音标" prop="phonetic">
+          <el-input v-model="wordForm.phonetic" placeholder="请输入音标，如 /ˈhɛloʊ/" />
+        </el-form-item>
         <el-form-item label="中文" prop="chinese">
           <el-input v-model="wordForm.chinese" placeholder="请输入中文翻译" />
         </el-form-item>
@@ -237,7 +246,7 @@
             v-model="importForm.jsonData" 
             type="textarea" 
             :rows="12"
-            placeholder='请粘贴 JSON 数据，格式：[{"lesson":1,"question":1,"english":"Excuse me!","chinese":"打扰一下！"}]'
+            placeholder='请粘贴 JSON 数据，格式：[{"lesson":1,"question":202,"english":"Reboot","phonetic":"/ˌriːˈbuːt/","chinese":"重启"}]'
           />
         </el-form-item>
         <el-form-item v-if="importMethod === 'file'" label="JSON 文件">
@@ -268,11 +277,11 @@
           <template #default>
             <div style="font-size: 12px; line-height: 1.6;">
               <p><strong>必填字段：</strong>question（序号）、english（英文）、chinese（中文）</p>
-              <p><strong>可选字段：</strong>lesson（课时号，有则按课时分组，无则全部内容在一起）</p>
+              <p><strong>可选字段：</strong>lesson（课时号）、phonetic（音标）</p>
               <p><strong>文件格式：</strong>支持 .json 和 .txt 文件，文件编码必须是 UTF-8</p>
               <p><strong>示例：</strong></p>
               <code style="display: block; background: #f5f5f5; padding: 8px; border-radius: 4px; margin-top: 5px;">
-                [{"lesson":1,"question":1,"english":"Hello","chinese":"你好"}]
+                [{"lesson":1,"question":202,"english":"Reboot","phonetic":"/ˌriːˈbuːt/","chinese":"重启"}]
               </code>
               <p style="margin-top: 8px; color: #e6a23c;">
                 <strong>注意：</strong>如果上传后中文显示乱码，请确保文件保存为 UTF-8 编码格式
@@ -331,7 +340,7 @@ const wordSearch = ref('');
 const wordDialog = ref(false);
 const wordDialogTitle = ref('新增单词');
 const wordFormRef = ref(null);
-const wordForm = ref({ id: null, lessonId: null, english: '', chinese: '' });
+const wordForm = ref({ id: null, lessonId: null, english: '', phonetic: '', chinese: '' });
 const wordRules = {
   lessonId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   english: [{ required: true, message: '请输入英文单词', trigger: 'blur' }],
@@ -583,6 +592,7 @@ const showAddWordDialog = () => {
     id: null, 
     lessonId: selectedLesson.value?.id || null, 
     english: '', 
+    phonetic: '',
     chinese: '' 
   };
   wordDialogTitle.value = '新增单词';
@@ -950,5 +960,15 @@ h2 {
 
 .empty-tip {
   margin-top: 10px;
+}
+
+.phonetic-text {
+  font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;
+  color: #606266;
+  font-size: 13px;
+}
+
+.empty-text {
+  color: #c0c4cc;
 }
 </style>

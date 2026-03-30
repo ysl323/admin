@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #303133;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #606266;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #409eff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #66b1ff;
+    }
+    button:disabled {
+      background: #c0c4cc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background: #f0f9ff;
+      border: 1px solid #b3e19d;
+      color: #67c23a;
+    }
+    .error {
+      background: #fef0f0;
+      border: 1px solid #f5b2b2;
+      color: #f56c6c;
+    }
+    .info {
+      background: #f4f4f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border-left: 4px solid #909399;
+    }
+    .info code {
+      background: #f5f7fa;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔐 登录测试</h1>
+
+    <div class="info">
+      <strong>测试凭据：</strong><br>
+      用户名: <code>admin</code><br>
+      密码: <code>admin123</code>
+    </div>
+
+    <div class="form-group">
+      <label for="username">用户名</label>
+      <input type="text" id="username" value="admin" placeholder="请输入用户名">
+    </div>
+
+    <div class="form-group">
+      <label for="password">密码</label>
+      <input type="password" id="password" value="admin123" placeholder="请输入密码">
+    </div>
+
+    <button id="loginBtn" onclick="testLogin()">测试登录</button>
+    <button onclick="window.open('http://localhost:5173', '_blank')">打开前端页面</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    async function testLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const resultDiv = document.getElementById('result');
+      const loginBtn = document.getElementById('loginBtn');
+
+      if (!username || !password) {
+        showResult('请输入用户名和密码', 'error');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = '登录中...';
+
+      try {
+        const response = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showResult(
+            `<strong>✅ 登录成功！</strong><br><br>
+            用户: ${data.user.username}<br>
+            管理员: ${data.user.isAdmin ? '是' : '否'}<br>
+            超级管理员: ${data.user.isSuperAdmin ? '是' : '否'}<br><br>
+            <a href="http://localhost:5173/categories" target="_blank">点击跳转到前端</a>`,
+            'success'
+          );
+        } else {
+          showResult(`<strong>❌ 登录失败</strong><br><br>错误信息: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        showResult(`<strong>❌ 请求失败</strong><br><br>错误: ${error.message}`, 'error');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = '测试登录';
+      }
+    }
+
+    function showResult(message, type) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = message;
+      resultDiv.className = `result ${type}`;
+      resultDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

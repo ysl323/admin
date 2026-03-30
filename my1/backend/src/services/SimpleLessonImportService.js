@@ -17,6 +17,7 @@ class SimpleLessonImportService {
         lesson: Joi.number().integer().positive().optional(),
         question: Joi.number().integer().positive().required(),
         english: Joi.string().required(),
+        phonetic: Joi.string().allow('').optional(),
         chinese: Joi.string().required()
       }).unknown(false) // 不允许额外字段
     ).min(1);
@@ -156,7 +157,8 @@ class SimpleLessonImportService {
           const wordRecords = items.map(item => ({
             lessonId: lesson.id,
             english: item.english,
-            chinese: item.chinese
+            chinese: item.chinese,
+            phonetic: item.phonetic || null
           }));
 
           await Word.bulkCreate(wordRecords, {
@@ -200,7 +202,8 @@ class SimpleLessonImportService {
         const wordRecords = sortedData.map(item => ({
           lessonId: lesson.id,
           english: item.english,
-          chinese: item.chinese
+          chinese: item.chinese,
+          phonetic: item.phonetic || null
         }));
 
         await Word.bulkCreate(wordRecords, {

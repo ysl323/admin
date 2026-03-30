@@ -1,10 +1,11 @@
-const express = require('express');
+import express from 'express';
+import { WordMastery } from '../models/index.js';
+import { authMiddleware } from '../middleware/auth.js';
+
 const router = express.Router();
-const { WordMastery } = require('../models');
-const { authenticateToken } = require('../middleware/auth');
 
 // 中间件：认证
-router.use(authenticateToken);
+router.use(authMiddleware);
 
 /**
  * @route   POST /api/word-mastery
@@ -249,4 +250,4 @@ router.post('/sync', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
