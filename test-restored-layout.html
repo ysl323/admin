@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试恢复后的学习页面布局</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+        }
+        .test-title {
+            color: #409eff;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #409eff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .test-link:hover {
+            background-color: #66b1ff;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .status.success {
+            background-color: #f0f9ff;
+            color: #67c23a;
+            border: 1px solid #b3e19d;
+        }
+        .status.info {
+            background-color: #ecf5ff;
+            color: #409eff;
+            border: 1px solid #b3d8ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>学习页面布局恢复测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">✅ 任务 1: 恢复原始布局结构</div>
+            <div class="status success">已完成 - 恢复到分离的卡片式布局</div>
+            <p><strong>更改内容:</strong></p>
+            <ul>
+                <li>移除了集中化的 main-learning-area 容器</li>
+                <li>恢复了独立的卡片式组件结构</li>
+                <li>每个功能区域现在都有独立的 el-card 包装</li>
+                <li>优化了间距和视觉层次</li>
+                <li>保持了所有现有功能的完整性</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔗 测试链接</div>
+            <a href="http://localhost:5173" class="test-link" target="_blank">前端首页</a>
+            <a href="http://localhost:5173/categories" class="test-link" target="_blank">学习分类</a>
+            <a href="http://localhost:3000/api/health" class="test-link" target="_blank">后端健康检查</a>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📋 布局结构对比</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>之前 (集中化布局):</h4>
+                    <ul>
+                        <li>单个 main-learning-area 容器</li>
+                        <li>固定高度 calc(100vh - 200px)</li>
+                        <li>紧凑的水平布局</li>
+                        <li>小尺寸按钮和字体</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>现在 (卡片式布局):</h4>
+                    <ul>
+                        <li>独立的 el-card 组件</li>
+                        <li>自然的垂直流布局</li>
+                        <li>更大的间距和字体</li>
+                        <li>更好的视觉层次</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🎯 下一步计划</div>
+            <div class="status info">准备开始任务 2: 创建设计系统基础</div>
+            <p>接下来将:</p>
+            <ul>
+                <li>定义设计令牌（颜色、间距、字体等）</li>
+                <li>创建基础组件样式</li>
+                <li>实现统一的视觉设计语言</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">⚠️ 测试说明</div>
+            <p>要测试恢复后的学习页面:</p>
+            <ol>
+                <li>访问 <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+                <li>使用管理员账号登录: admin / admin123</li>
+                <li>进入任意学习分类和课程</li>
+                <li>验证所有功能正常工作</li>
+                <li>检查布局是否为独立的卡片式结构</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 检查服务状态
+        async function checkServices() {
+            try {
+                // 检查前端
+                const frontendResponse = await fetch('http://localhost:5173');
+                console.log('前端服务状态:', frontendResponse.ok ? '正常' : '异常');
+                
+                // 检查后端
+                const backendResponse = await fetch('http://localhost:3000/api/health');
+                console.log('后端服务状态:', backendResponse.ok ? '正常' : '异常');
+            } catch (error) {
+                console.log('服务检查失败:', error.message);
+            }
+        }
+        
+        checkServices();
+    </script>
+</body>
+</html>

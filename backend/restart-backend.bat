@@ -1,0 +1,16 @@
+@echo off
+echo 正在重启后端服务...
+cd /d e:\demo\my1\my1\my1\backend
+
+echo 停止现有进程...
+taskkill /F /IM node.exe 2>nul
+
+echo 等待2秒...
+timeout /t 2 /nobreak
+
+echo 启动后端服务...
+start /B npm run dev
+
+echo 后端服务正在启动...
+echo 请等待5-10秒后访问 http://localhost:3000
+pause

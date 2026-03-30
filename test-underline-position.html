@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下划线定位测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f5f5f5;
+    }
+
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #303133;
+      margin-bottom: 40px;
+    }
+
+    .test-section {
+      margin-bottom: 40px;
+      padding: 20px;
+      border: 2px solid #e4e7ed;
+      border-radius: 8px;
+    }
+
+    .test-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #409eff;
+      margin-bottom: 20px;
+    }
+
+    /* 多单词输入容器 */
+    .multi-word-input {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .word-part {
+      display: inline-block;
+    }
+
+    /* 输入框容器 */
+    .word-input-container {
+      position: relative;
+      display: inline-block;
+      padding-bottom: 40px; /* 为下划线留出空间 */
+    }
+
+    /* 下划线输入框样式 */
+    .underline-input {
+      width: 100%;
+      border: none;
+      border-bottom: none;
+      outline: none;
+      font-size: 32px;
+      text-align: center;
+      padding: 15px 10px;
+      background: transparent;
+      color: #303133;
+      font-weight: 500;
+      letter-spacing: 2px;
+      transition: all 0.3s;
+    }
+
+    .underline-input:focus {
+      border-bottom: none;
+      box-shadow: none;
+    }
+
+    /* 下划线占位符 - 显示在输入框正下方 */
+    .underline-placeholder {
+      position: absolute;
+      top: 100%; /* 定位到输入框底部 */
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 5px; /* 与输入框保持5px间距 */
+      color: #409eff;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap; /* 防止换行 */
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background-color: #f0f9ff;
+      color: #67c23a;
+      border: 1px solid #67c23a;
+    }
+
+    .status.error {
+      background-color: #fef0f0;
+      color: #f56c6c;
+      border: 1px solid #f56c6c;
+    }
+
+    .instructions {
+      background-color: #ecf5ff;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      color: #409eff;
+    }
+
+    .instructions ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🔍 下划线定位修复验证</h1>
+
+    <div class="instructions">
+      <strong>验证步骤：</strong>
+      <ul>
+        <li>✅ 下划线应该显示在输入框<strong>下方</strong>，不是右侧</li>
+        <li>✅ 输入字母时，下划线长度应该动态减少</li>
+        <li>✅ 下划线应该始终可见（不消失）</li>
+        <li>✅ 输入框宽度应该根据内容动态调整</li>
+      </ul>
+    </div>
+
+    <!-- 测试1：单个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 1: 单个单词 (hello)</div>
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input1"
+              style="width: 100px;"
+            />
+            <div class="underline-placeholder" id="placeholder1">_____</div>
+          </div>
+        </div>
+      </div>
+      <div class="status success" id="status1">
+        ✅ 如果下划线在输入框下方，说明定位正确
+      </div>
+    </div>
+
+    <!-- 测试2：两个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 2: 两个单词 (good morning)</div>
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input2a"
+              style="width: 80px;"
+            />
+            <div class="underline-placeholder" id="placeholder2a">____</div>
+          </div>
+        </div>
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input2b"
+              style="width: 140px;"
+            />
+            <div class="underline-placeholder" id="placeholder2b">_______</div>
+          </div>
+        </div>
+      </div>
+      <div class="status success" id="status2">
+        ✅ 如果两个下划线都在各自输入框下方，说明定位正确
+      </div>
+    </div>
+
+    <!-- 测试3：三个单词 -->
+    <div class="test-section">
+      <div class="test-title">测试 3: 三个单词 (how are you)</div>
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input3a"
+              style="width: 60px;"
+            />
+            <div class="underline-placeholder" id="placeholder3a">___</div>
+          </div>
+        </div>
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input3b"
+              style="width: 60px;"
+            />
+            <div class="underline-placeholder" id="placeholder3b">___</div>
+          </div>
+        </div>
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input3c"
+              style="width: 60px;"
+            />
+            <div class="underline-placeholder" id="placeholder3c">___</div>
+          </div>
+        </div>
+      </div>
+      <div class="status success" id="status3">
+        ✅ 如果三个下划线都在各自输入框下方，说明定位正确
+      </div>
+    </div>
+
+    <!-- 测试4：动态输入测试 -->
+    <div class="test-section">
+      <div class="test-title">测试 4: 动态输入测试 (输入 "hello" 观察下划线变化)</div>
+      <div class="multi-word-input">
+        <div class="word-part">
+          <div class="word-input-container">
+            <input
+              type="text"
+              class="underline-input"
+              id="input4"
+              style="width: 100px;"
+            />
+            <div class="underline-placeholder" id="placeholder4">_____</div>
+          </div>
+        </div>
+      </div>
+      <div class="status success" id="status4">
+        ✅ 输入字母时，下划线应该逐渐变短
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 测试4：动态输入
+    const input4 = document.getElementById('input4');
+    const placeholder4 = document.getElementById('placeholder4');
+    const targetWord = 'hello';
+
+    input4.addEventListener('input', (e) => {
+      const currentLength = e.target.value.length;
+      const remainingLength = Math.max(targetWord.length - currentLength, 0);
+      placeholder4.textContent = '_'.repeat(remainingLength);
+      
+      // 动态调整输入框宽度
+      const displayLength = Math.max(currentLength, targetWord.length);
+      input4.style.width = Math.max(displayLength * 20, 60) + 'px';
+    });
+
+    // 为所有输入框添加键盘声音
+    document.querySelectorAll('.underline-input').forEach(input => {
+      input.addEventListener('input', () => {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.05);
+        } catch (error) {
+          // 静默失败
+        }
+      });
+    });
+
+    console.log('✅ 下划线定位测试页面已加载');
+    console.log('📝 请检查：');
+    console.log('1. 下划线是否在输入框下方（不是右侧）');
+    console.log('2. 输入字母时下划线是否动态变化');
+    console.log('3. 下划线是否始终可见');
+  </script>
+</body>
+</html>

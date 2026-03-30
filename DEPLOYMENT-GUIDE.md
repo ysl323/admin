@@ -1,458 +1,345 @@
-# 学习模式功能 - 部署指南
+# 服务器部署指南
 
-## 📋 部署概述
+## 服务器信息
+- IP: 47.97.185.117
+- 用户: root
+- 密码: Admin88868
+- SSH 端口: 22
 
-本文档提供学习模式功能的完整部署指南,包括自动化部署脚本、手动部署步骤和验证方案。
+## 快速部署步骤
 
----
+### 方法 1: 自动部署（推荐）
 
-## 🚀 快速部署(推荐)
-
-### 前提条件
-- 腾讯云服务器登录密码: `Admin88868`
-- 项目代码已推送到Git仓库
-
-### 部署步骤
-
-#### 1. 登录腾讯云控制台
-1. 访问: https://console.cloud.tencent.com/
-2. 进入「云服务器」→「实例」
-3. 点击「登录」按钮
-4. 输入密码: `Admin88868`
-
-#### 2. 执行部署命令
-登录服务器后,依次执行:
-
+1. **在本地运行部署脚本**
 ```bash
-# 进入项目目录
-cd /root/english-learning/my1
-
-# 拉取最新代码
-git pull origin master
-
-# 如果是新部署,先上传部署脚本
-# 从本地将以下文件上传到服务器的 /root/english-learning/my1/ 目录:
-#   - 服务器端部署脚本.sh
-#   - verify-learning-mode.sh
-
-# 赋予执行权限
-chmod +x 服务器端部署脚本.sh
-chmod +x verify-learning-mode.sh
-
-# 执行自动化部署
-./服务器端部署脚本.sh
-
-# 等待部署完成后,执行验证脚本
-./verify-learning-mode.sh
+cd my1
+.\deploy-to-server.bat
 ```
 
-#### 3. 验证部署
-访问网站: http://47.97.185.117
+这个脚本会自动：
+- 检查前端构建文件
+- 创建部署包
+- 上传到服务器
+- 在服务器上部署
 
-测试学习模式功能:
-1. 进入学习页面
-2. 切换到「小白模式」
-3. 点击「标记为掌握」按钮
-4. 验证英文是否正确隐藏
-5. 刷新页面验证状态是否持久化
+### 方法 2: 手动部署
 
----
+#### 步骤 1: 本地准备
 
-## 📝 手动部署步骤
-
-如果自动化脚本失败,请按以下步骤手动部署:
-
-### 步骤 1: 备份现有数据
-
+1. 构建前端（如果还没构建）
 ```bash
-cd /root/english-learning/my1
-
-# 创建备份目录
-BACKUP_DIR="/root/backup-$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$BACKUP_DIR"
-
-# 备份代码和数据库
-cp -r backend frontend "$BACKUP_DIR/" 2>/dev/null || true
-cp backend/database.sqlite "$BACKUP_DIR/" 2>/dev/null || true
-
-echo "备份完成: $BACKUP_DIR"
-```
-
-### 步骤 2: 拉取最新代码
-
-```bash
-cd /root/english-learning/my1
-
-# 拉取代码
-git fetch origin
-git pull origin master
-```
-
-### 步骤 3: 数据库迁移
-
-```bash
-cd /root/english-learning/my1/backend
-
-# 检查是否需要迁移
-sqlite3 database.sqlite ".schema word_mastery" | grep "unique_user_lesson_word_mastery"
-
-# 如果没有输出,说明需要迁移
-sqlite3 database.sqlite <<EOF
--- 备份现有数据
-CREATE TABLE IF NOT EXISTS word_mastery_backup AS SELECT * FROM word_mastery;
-
--- 删除旧索引
-DROP INDEX IF EXISTS unique_user_word_mastery;
-
--- 创建新索引(包含lessonId)
-CREATE UNIQUE INDEX IF NOT EXISTS unique_user_lesson_word_mastery
-ON word_mastery (userId, lessonId, wordId);
-EOF
-```
-
-### 步骤 4: 安装后端依赖
-
-```bash
-cd /root/english-learning/my1/backend
-
-npm install --production
-```
-
-### 步骤 5: 初始化数据库
-
-```bash
-npm run db:init
-```
-
-### 步骤 6: 构建前端
-
-```bash
-cd /root/english-learning/my1/frontend
-
-# 清理缓存(可选)
-rm -rf node_modules package-lock.json dist
-
-npm install
+cd my1/frontend
 npm run build
 ```
 
-### 步骤 7: 重启服务
-
+2. 创建部署包
 ```bash
-cd /root/english-learning/my1
+# 在 my1 目录下
+mkdir deploy-package
+mkdir deploy-package\backend
+mkdir deploy-package\frontend
 
-# 重启后端
-pm2 restart english-backend
+# 复制后端文件
+xcopy /E /I /Y backend\src deploy-package\backend\src
+xcopy /E /I /Y backend\node_modules deploy-package\backend\node_modules
+copy backend\package.json deploy-package\backend\
+copy backend\.env deploy-package\backend\
 
-# 如果后端未启动,则启动新服务
-pm2 start backend/src/index.js --name english-backend
-pm2 save
+# 复制前端构建文件
+xcopy /E /I /Y frontend\dist deploy-package\frontend\dist
 
-# 重启Nginx
-nginx -s reload
+# 压缩
+powershell -Command "Compress-Archive -Path deploy-package\* -DestinationPath deploy-package.zip -Force"
 ```
 
-### 步骤 8: 验证服务状态
+#### 步骤 2: 上传到服务器
+
+使用 SCP 上传：
+```bash
+scp -P 22 deploy-package.zip root@47.97.185.117:/root/
+```
+
+或使用 FTP 工具（如 FileZilla）上传到 `/root/`
+
+#### 步骤 3: 在服务器上部署
+
+1. SSH 连接到服务器
+```bash
+ssh -p 22 root@47.97.185.117
+# 密码: Admin88868
+```
+
+2. 运行部署脚本
+```bash
+cd /root
+chmod +x server-setup.sh
+./server-setup.sh
+```
+
+或手动执行：
 
 ```bash
-# 检查PM2状态
+# 创建目录
+mkdir -p /www/wwwroot/english-learning/{backend,frontend,logs,data}
+
+# 解压文件
+cd /root
+unzip -o deploy-package.zip -d /www/wwwroot/english-learning
+
+# 配置环境变量
+cd /www/wwwroot/english-learning/backend
+cat > .env << 'EOF'
+NODE_ENV=production
+PORT=3000
+DB_DIALECT=sqlite
+DB_STORAGE=../data/database.sqlite
+SESSION_SECRET=your-production-secret-key-change-this
+SESSION_NAME=english_learning_session
+CORS_ORIGIN=http://47.97.185.117
+LOG_LEVEL=info
+LOG_DIR=../logs
+TTS_APP_ID=2128862431
+TTS_ACCESS_TOKEN=your-tts-token-here
+EOF
+
+# 启动后端服务
+pm2 delete english-backend 2>/dev/null || true
+pm2 start src/index.js --name english-backend --log ../logs/backend.log
+pm2 save
+pm2 startup
+
+# 配置 Nginx
+cat > /etc/nginx/conf.d/english-learning.conf << 'EOF'
+server {
+    listen 80;
+    server_name 47.97.185.117;
+
+    location / {
+        root /www/wwwroot/english-learning/frontend/dist;
+        try_files $uri $uri/ /index.html;
+        index index.html;
+    }
+
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /health {
+        proxy_pass http://localhost:3000;
+        access_log off;
+    }
+}
+EOF
+
+# 重载 Nginx
+nginx -t && nginx -s reload
+```
+
+## 验证部署
+
+1. 检查服务状态
+```bash
+pm2 status
+pm2 logs english-backend
+```
+
+2. 测试 API
+```bash
+curl http://localhost:3000/health
+```
+
+3. 访问网站
+打开浏览器访问: http://47.97.185.117
+
+## 常用管理命令
+
+### PM2 进程管理
+```bash
+# 查看状态
 pm2 status
 
-# 查看后端日志
-pm2 logs english-backend --lines 20
+# 查看日志
+pm2 logs english-backend
 
-# 检查Nginx状态
-systemctl status nginx
+# 重启服务
+pm2 restart english-backend
 
-# 测试API
-curl http://localhost:3000/api/health
+# 停止服务
+pm2 stop english-backend
+
+# 删除服务
+pm2 delete english-backend
 ```
 
----
-
-## ✅ 功能验证清单
-
-### 学习模式选择器
-- [ ] 显示三个学习模式选项(小白/进阶/其他)
-- [ ] 模式描述文字正确
-- [ ] 激活状态颜色正确(绿色/橙色/蓝色)
-- [ ] 模式切换响应及时
-- [ ] 刷新页面后模式状态保持
-
-### 小白模式
-- [ ] 未掌握的单词显示英文翻译
-- [ ] 「标记为掌握」按钮正常显示
-- [ ] 点击标记后英文立即隐藏
-- [ ] 按钮状态变为"已掌握"
-- [ ] 撤销标记后英文重新显示
-- [ ] 刷新页面掌握状态持久化
-
-### 进阶/其他模式
-- [ ] 所有单词不显示英文
-- [ ] 不显示「标记为掌握」按钮
-- [ ] 拼写正确后显示完整句子
-
-### 数据同步
-- [ ] 本地localStorage正常存储
-- [ ] 服务器数据库正常同步
-- [ ] 不同课程的掌握状态独立
-
----
-
-## 🛠 故障排查
-
-### 问题1: 网站无法访问
-
+### Nginx 管理
 ```bash
-# 检查Nginx状态
-systemctl status nginx
-
-# 如果未运行,启动Nginx
-systemctl start nginx
-
-# 检查Nginx配置
+# 测试配置
 nginx -t
 
-# 查看错误日志
-tail -50 /var/log/nginx/error.log
+# 重载配置
+nginx -s reload
+
+# 重启 Nginx
+systemctl restart nginx
+
+# 查看状态
+systemctl status nginx
 ```
 
-### 问题2: 后端服务启动失败
-
+### 日志查看
 ```bash
-# 查看PM2日志
-pm2 logs english-backend --lines 50 --err
+# 后端日志
+tail -f /www/wwwroot/english-learning/logs/backend.log
+tail -f /www/wwwroot/english-learning/logs/backend-error.log
+
+# Nginx 日志
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+```
+
+## 更新部署
+
+当有代码更新时：
+
+1. 在本地重新构建
+```bash
+cd my1/frontend
+npm run build
+```
+
+2. 重新运行部署脚本
+```bash
+cd my1
+.\deploy-to-server.bat
+```
+
+或者只更新特定部分：
+
+### 只更新前端
+```bash
+# 本地
+cd my1/frontend
+npm run build
+scp -r dist/* root@47.97.185.117:/www/wwwroot/english-learning/frontend/dist/
+
+# 不需要重启服务
+```
+
+### 只更新后端
+```bash
+# 本地
+scp -r backend/src/* root@47.97.185.117:/www/wwwroot/english-learning/backend/src/
+
+# 服务器
+ssh root@47.97.185.117
+pm2 restart english-backend
+```
+
+## 故障排查
+
+### 服务无法启动
+```bash
+# 查看详细日志
+pm2 logs english-backend --lines 100
 
 # 检查端口占用
 netstat -tlnp | grep 3000
 
-# 重启后端
-pm2 restart english-backend
+# 手动启动测试
+cd /www/wwwroot/english-learning/backend
+node src/index.js
 ```
 
-### 问题3: 学习模式功能不生效
-
+### 前端无法访问
 ```bash
-# 1. 检查前端文件是否存在
-ls -la /root/english-learning/my1/frontend/src/components/LearningModeSelector.vue
-ls -la /root/english-learning/my1/frontend/src/stores/learning.js
+# 检查 Nginx 配置
+nginx -t
 
-# 2. 检查后端文件是否存在
-ls -la /root/english-learning/my1/backend/src/models/WordMastery.js
-ls -la /root/english-learning/my1/backend/src/routes/wordMastery.js
+# 检查文件权限
+ls -la /www/wwwroot/english-learning/frontend/dist/
 
-# 3. 检查数据库表结构
-sqlite3 /root/english-learning/my1/backend/database.sqlite ".schema word_mastery"
-
-# 4. 清除浏览器缓存
-# 打开浏览器开发者工具 → Application → Local Storage → 清除相关数据
-
-# 5. 查看浏览器控制台日志
-# 打开浏览器开发者工具 → Console
+# 查看 Nginx 错误日志
+tail -f /var/log/nginx/error.log
 ```
 
-### 问题4: 前端构建失败
-
+### API 请求失败
 ```bash
-cd /root/english-learning/my1/frontend
+# 检查后端服务
+pm2 status
+curl http://localhost:3000/health
 
-# 清理缓存重新构建
-rm -rf node_modules package-lock.json dist
-npm install
-npm run build
-
-# 查看构建错误
-npm run build 2>&1 | tee build.log
+# 检查 Nginx 代理配置
+cat /etc/nginx/conf.d/english-learning.conf
 ```
 
-### 问题5: 数据库迁移失败
+## 安全建议
 
+1. 修改默认密码
 ```bash
-cd /root/english-learning/my1/backend
+# 修改 root 密码
+passwd
 
-# 查看当前表结构
-sqlite3 database.sqlite ".schema word_mastery"
-
-# 手动执行迁移
-sqlite3 database.sqlite <<EOF
-DROP INDEX IF EXISTS unique_user_word_mastery;
-CREATE UNIQUE INDEX IF NOT EXISTS unique_user_lesson_word_mastery
-ON word_mastery (userId, lessonId, wordId);
-EOF
-
-# 验证索引
-sqlite3 database.sqlite ".indexes word_mastery"
+# 修改 .env 中的 SESSION_SECRET
+vi /www/wwwroot/english-learning/backend/.env
 ```
 
----
-
-## 🔄 回滚方案
-
-如果部署后出现严重问题,可以快速回滚:
-
+2. 配置防火墙
 ```bash
-# 1. 找到最近的备份
-ls -lt /root/backup-* | head -1
-
-# 2. 恢复备份
-BACKUP_DIR=$(ls -dt /root/backup-* | head -1)
-cp -r "$BACKUP_DIR/backend/"* /root/english-learning/my1/backend/
-cp -r "$BACKUP_DIR/frontend/"* /root/english-learning/my1/frontend/
-cp "$BACKUP_DIR/database.sqlite" /root/english-learning/my1/backend/
-
-# 3. 重启服务
-pm2 restart english-backend
-nginx -s reload
-
-# 4. 验证
-./verify-learning-mode.sh
+# 只开放必要端口
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
 ```
 
----
-
-## 📊 部署文件清单
-
-### 本地创建的文件(需上传到服务器)
-1. `服务器端部署脚本.sh` - 自动化部署脚本
-2. `verify-learning-mode.sh` - 验证脚本
-3. `部署说明-学习模式.md` - 详细部署文档
-
-### 修改的文件(已提交到Git)
-- `frontend/src/components/LearningModeSelector.vue` - 学习模式选择器组件
-- `frontend/src/views/LearningPage.vue` - 学习页面(集成模式选择器)
-- `frontend/src/stores/learning.js` - 学习状态管理
-- `frontend/src/services/wordMastery.js` - 单词掌握API服务
-- `backend/src/models/WordMastery.js` - 数据库模型
-- `backend/src/routes/wordMastery.js` - API路由
-- `backend/src/services/wordMastery.js` - 业务逻辑服务
-- `backend/src/index.js` - 路由注册
-
----
-
-## 🔐 安全检查
-
-### 环境变量检查
+3. 配置 HTTPS（推荐）
 ```bash
-cd /root/english-learning/my1/backend
-
-# 检查.env文件
-cat .env
-
-# 确保包含以下配置:
-# JWT_SECRET=your-secret-key
-# DATABASE_PATH=database.sqlite
-# PORT=3000
+# 使用 Let's Encrypt
+certbot --nginx -d yourdomain.com
 ```
 
-### 敏感信息检查
-- 不要在生产环境暴露数据库密码
-- 不要提交.env文件到Git
-- 定期更新JWT密钥
+## 备份
 
----
-
-## 📈 性能优化建议
-
-### 1. 启用PM2集群模式
+### 备份数据库
 ```bash
-cd /root/english-learning/my1
+# 备份 SQLite 数据库
+cp /www/wwwroot/english-learning/data/database.sqlite /root/backup/database-$(date +%Y%m%d).sqlite
+```
 
-# 停止当前服务
-pm2 stop english-backend
-pm2 delete english-backend
+### 备份配置
+```bash
+# 备份配置文件
+tar -czf /root/backup/config-$(date +%Y%m%d).tar.gz \
+  /www/wwwroot/english-learning/backend/.env \
+  /etc/nginx/conf.d/english-learning.conf
+```
 
-# 启动集群模式(根据CPU核心数)
-pm2 start backend/src/index.js --name english-backend -i max
+## 监控
+
+### 设置自动重启
+PM2 已配置自动重启，如果进程崩溃会自动恢复。
+
+### 设置开机自启
+```bash
+pm2 startup
 pm2 save
 ```
 
-### 2. 配置Nginx缓存
-在 `/etc/nginx/conf.d/english-learning.conf` 添加:
-```nginx
-# 静态资源缓存
-location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-### 3. 启用日志轮转
+### 监控资源使用
 ```bash
-pm2 install pm2-logrotate
-pm2 set pm2-logrotate:max_size 10M
-pm2 set pm2-logrotate:retain 7
-pm2 set pm2-logrotate:compress true
+pm2 monit
 ```
 
----
+## 联系信息
 
-## 📞 技术支持
-
-如遇到问题,请提供以下信息:
-
-1. **服务状态**
-   ```bash
-   pm2 status
-   systemctl status nginx
-   ```
-
-2. **错误日志**
-   ```bash
-   pm2 logs english-backend --lines 50
-   tail -50 /var/log/nginx/error.log
-   ```
-
-3. **数据库信息**
-   ```bash
-   sqlite3 /root/english-learning/my1/backend/database.sqlite ".schema word_mastery"
-   ```
-
-4. **浏览器控制台截图**
-   - 打开开发者工具(F12)
-   - 查看Console标签的错误信息
-   - 截图保存
-
----
-
-## 📅 部署记录模板
-
-```
-部署日期: ___________
-部署人员: ___________
-Git提交ID: ___________
-
-部署前检查:
-- [ ] 代码已推送到Git
-- [ ] 数据库已备份
-- [ ] 部署脚本已准备
-
-部署结果:
-- [ ] 部署成功
-- [ ] 验证通过
-- [ ] 功能正常
-
-问题记录:
-_______________________________________________
-
-备注:
-_______________________________________________
-```
-
----
-
-## ✨ 部署完成检查
-
-部署完成后,请确认:
-
-- [ ] 访问 http://47.97.185.117 正常
-- [ ] 登录功能正常
-- [ ] 进入学习页面正常
-- [ ] 学习模式切换正常
-- [ ] 小白模式功能正常
-- [ ] 标记掌握功能正常
-- [ ] 数据持久化正常
-- [ ] 刷新页面状态保持
-- [ ] 无控制台错误
-- [ ] 后端服务状态为online
-
-全部确认后,部署完成! 🎉
+如有问题，请检查：
+1. 后端日志: `/www/wwwroot/english-learning/logs/`
+2. PM2 日志: `pm2 logs english-backend`
+3. Nginx 日志: `/var/log/nginx/`

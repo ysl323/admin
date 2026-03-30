@@ -1,0 +1,35 @@
+{
+  "category": "Programming Basics",
+  "lessons": [
+    {
+      "lesson": 1,
+      "words": [
+        { "en": "variable", "cn": "变量" },
+        { "en": "function", "cn": "函数" },
+        { "en": "parameter", "cn": "参数" },
+        { "en": "return", "cn": "返回" },
+        { "en": "loop", "cn": "循环" }
+      ]
+    },
+    {
+      "lesson": 2,
+      "words": [
+        { "en": "array", "cn": "数组" },
+        { "en": "object", "cn": "对象" },
+        { "en": "string", "cn": "字符串" },
+        { "en": "number", "cn": "数字" },
+        { "en": "boolean", "cn": "布尔值" }
+      ]
+    },
+    {
+      "lesson": 3,
+      "words": [
+        { "en": "class", "cn": "类" },
+        { "en": "method", "cn": "方法" },
+        { "en": "property", "cn": "属性" },
+        { "en": "constructor", "cn": "构造函数" },
+        { "en": "instance", "cn": "实例" }
+      ]
+    }
+  ]
+}

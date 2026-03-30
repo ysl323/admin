@@ -1,4 +1,4 @@
-import request from './request';
+import request from './api';
 
 /**
  * 单词掌握状态API服务
@@ -33,7 +33,7 @@ class WordMasteryService {
    */
   async getLessonMastery(lessonId) {
     const response = await request.get(`/word-mastery/lesson/${lessonId}`);
-    return response.data?.masteredWordIds || [];
+    return response?.masteredWordIds || [];
   }
 
   /**
@@ -42,7 +42,7 @@ class WordMasteryService {
    */
   async getUserMasteryStats() {
     const response = await request.get('/word-mastery/stats');
-    return response.data?.stats || [];
+    return response?.stats || [];
   }
 
   /**

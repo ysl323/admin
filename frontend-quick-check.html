@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>前端快速诊断工具</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #303133;
+      border-bottom: 3px solid #409eff;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #409eff;
+      margin-top: 30px;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    .status.success {
+      background: #f0f9ff;
+      border-color: #67c23a;
+      color: #67c23a;
+    }
+    .status.error {
+      background: #fef0f0;
+      border-color: #f56c6c;
+      color: #f56c6c;
+    }
+    .status.warning {
+      background: #fdf6ec;
+      border-color: #e6a23c;
+      color: #e6a23c;
+    }
+    .status.info {
+      background: #f4f4f5;
+      border-color: #909399;
+      color: #606266;
+    }
+    button {
+      background: #409eff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #66b1ff;
+    }
+    button:disabled {
+      background: #c0c4cc;
+      cursor: not-allowed;
+    }
+    .result {
+      background: #f4f4f5;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .step {
+      background: #ecf5ff;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      border-left: 4px solid #409eff;
+    }
+    .step-title {
+      font-weight: bold;
+      color: #409eff;
+      margin-bottom: 10px;
+    }
+    .action-buttons {
+      margin: 20px 0;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #409eff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 前端快速诊断工具</h1>
+    <p>此工具将帮助您诊断前端显示问题</p>
+
+    <div class="action-buttons">
+      <button onclick="runFullDiagnosis()">🚀 运行完整诊断</button>
+      <button onclick="checkCookies()">🍪 检查 Cookies</button>
+      <button onclick="testAPIs()">🌐 测试 API</button>
+      <button onclick="clearCache()">🗑️ 清除浏览器缓存</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    let resultsDiv = document.getElementById('results');
+
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.innerHTML = message;
+      resultsDiv.appendChild(div);
+      resultsDiv.scrollTop = resultsDiv.scrollHeight;
+    }
+
+    function logResult(title, data) {
+      const div = document.createElement('div');
+      div.innerHTML = `<strong>${title}:</strong>`;
+      resultsDiv.appendChild(div);
+      
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'result';
+      resultDiv.textContent = JSON.stringify(data, null, 2);
+      resultsDiv.appendChild(resultDiv);
+    }
+
+    async function runFullDiagnosis() {
+      resultsDiv.innerHTML = '<div class="status info"><span class="loading"></span>正在运行完整诊断...</div>';
+      
+      await checkCookies();
+      await testAPIs();
+      await checkLocalStorage();
+      
+      log('✅ 诊断完成！请查看上面的结果', 'success');
+    }
+
+    function checkCookies() {
+      log('📋 步骤 1: 检查 Cookies', 'info');
+      
+      const cookies = document.cookie;
+      if (!cookies) {
+        log('❌ 没有找到任何 Cookie！', 'error');
+        log('💡 解决方案：请先登录管理员账号 (admin/admin123)', 'warning');
+        return;
+      }
+
+      const hasSid = cookies.includes('connect.sid');
+      if (hasSid) {
+        log('✅ 找到 Session Cookie (connect.sid)', 'success');
+      } else {
+        log('❌ 没有找到 Session Cookie！', 'error');
+        log('💡 解决方案：请重新登录管理员账号', 'warning');
+      }
+
+      logResult('所有 Cookies', cookies);
+    }
+
+    async function testAPIs() {
+      log('📋 步骤 2: 测试 API 端点', 'info');
+
+      // 测试分类 API
+      try {
+        log('正在测试 /api/learning/categories...', 'info');
+        const response = await fetch(`${API_BASE}/learning/categories`, {
+          credentials: 'include'
+        });
+        
+        logResult('分类 API 状态', {
+          status: response.status,
+          statusText: response.statusText
+        });
+
+        if (response.status === 401) {
+          log('❌ 未登录 (401)！', 'error');
+          log('💡 解决方案：请访问 http://localhost:5173/login 登录', 'warning');
+        } else if (response.status === 403) {
+          log('❌ 权限不足 (403)！', 'error');
+          log('💡 解决方案：请使用管理员账号登录', 'warning');
+        } else if (response.ok) {
+          const data = await response.json();
+          log(`✅ 分类 API 正常！找到 ${data.categories?.length || 0} 个分类`, 'success');
+          logResult('分类数据', data);
+        } else {
+          log(`❌ API 返回错误: ${response.status}`, 'error');
+        }
+      } catch (error) {
+        log(`❌ 分类 API 请求失败: ${error.message}`, 'error');
+        log('💡 检查后端是否运行在 http://localhost:3000', 'warning');
+      }
+
+      // 测试缓存统计 API
+      try {
+        log('正在测试 /api/audio-cache/statistics...', 'info');
+        const response = await fetch(`${API_BASE}/audio-cache/statistics`, {
+          credentials: 'include'
+        });
+        
+        logResult('缓存统计 API 状态', {
+          status: response.status,
+          statusText: response.statusText
+        });
+
+        if (response.status === 401) {
+          log('❌ 未登录 (401)！', 'error');
+        } else if (response.status === 403) {
+          log('❌ 权限不足 (403) - 需要管理员权限！', 'error');
+        } else if (response.ok) {
+          const data = await response.json();
+          log(`✅ 缓存统计 API 正常！总缓存数: ${data.stats?.totalCount || 0}`, 'success');
+          logResult('缓存统计', data);
+        } else {
+          log(`❌ API 返回错误: ${response.status}`, 'error');
+        }
+      } catch (error) {
+        log(`❌ 缓存统计 API 请求失败: ${error.message}`, 'error');
+      }
+
+      // 测试缓存列表 API
+      try {
+        log('正在测试 /api/audio-cache/list...', 'info');
+        const response = await fetch(`${API_BASE}/audio-cache/list?limit=10&offset=0`, {
+          credentials: 'include'
+        });
+        
+        logResult('缓存列表 API 状态', {
+          status: response.status,
+          statusText: response.statusText
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          log(`✅ 缓存列表 API 正常！找到 ${data.caches?.length || 0} 条缓存`, 'success');
+          logResult('缓存列表', data);
+        }
+      } catch (error) {
+        log(`❌ 缓存列表 API 请求失败: ${error.message}`, 'error');
+      }
+    }
+
+    function checkLocalStorage() {
+      log('📋 步骤 3: 检查 LocalStorage', 'info');
+      
+      const storage = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        storage[key] = localStorage.getItem(key);
+      }
+
+      if (Object.keys(storage).length === 0) {
+        log('ℹ️ LocalStorage 为空', 'info');
+      } else {
+        logResult('LocalStorage 内容', storage);
+      }
+    }
+
+    function clearCache() {
+      if (confirm('确定要清除浏览器缓存吗？这将清除所有 LocalStorage 数据。')) {
+        localStorage.clear();
+        log('✅ LocalStorage 已清除', 'success');
+        log('💡 请刷新页面 (F5) 并重新登录', 'warning');
+      }
+    }
+
+    // 页面加载时自动检查
+    window.onload = function() {
+      log('👋 欢迎使用前端诊断工具！', 'success');
+      log('💡 点击上方按钮开始诊断', 'info');
+    };
+  </script>
+</body>
+</html>
