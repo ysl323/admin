@@ -6,6 +6,7 @@ import Word from './Word.js';
 import Config from './Config.js';
 import AudioCache from './AudioCache.js';
 import WordMastery from './WordMastery.js';
+import UserSetting from './UserSetting.js';
 
 // 定义模型关系
 
@@ -64,5 +65,16 @@ WordMastery.belongsTo(Word, {
   as: 'word'
 });
 
+// User -> UserSetting (一对多)
+User.hasMany(UserSetting, {
+  foreignKey: 'userId',
+  as: 'settings',
+  onDelete: 'CASCADE'
+});
+UserSetting.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
 // 导出所有模型和 sequelize 实例
-export { sequelize, User, Category, Lesson, Word, Config, AudioCache, WordMastery };
+export { sequelize, User, Category, Lesson, Word, Config, AudioCache, WordMastery, UserSetting };

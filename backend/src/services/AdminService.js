@@ -72,7 +72,7 @@ class AdminService {
    */
   async deleteCategory(id) {
     const transaction = await sequelize.transaction();
-    
+
     try {
       const category = await Category.findByPk(id, { transaction });
       if (!category) {
@@ -80,23 +80,32 @@ class AdminService {
         throw new Error('分类不存在');
       }
 
-      // 统计将被删除的课程和单词数量
+      // 获取所有关联的课程
       const lessons = await Lesson.findAll({
         where: { categoryId: id },
         attributes: ['id'],
         transaction
       });
       const lessonIds = lessons.map(l => l.id);
-      
+
+      // 先删除关联的单词
       let wordCount = 0;
       if (lessonIds.length > 0) {
-        wordCount = await Word.count({
+        wordCount = await Word.destroy({
           where: { lessonId: lessonIds },
           transaction
         });
       }
 
-      // 删除分类（级联删除会自动处理课程和单词）
+      // 删除关联的课程
+      if (lessonIds.length > 0) {
+        await Lesson.destroy({
+          where: { categoryId: id },
+          transaction
+        });
+      }
+
+      // 最后删除分类
       await category.destroy({ transaction });
       await transaction.commit();
 
@@ -554,7 +563,8 @@ class AdminService {
   // ==================== 导出功能 ====================
 
   /**
-   * 导出所有课程数据（JSON格式）
+   * 导出所有课程数据（与导入格式一致）
+   * 格式：[{lesson, question, english, phonetic, chinese}]
    * @returns {Promise<Object>} 导出的数据
    */
   async exportAllData() {
@@ -574,18 +584,26 @@ class AdminService {
         }]
       });
 
-      // 转换为导出格式
-      const exportData = categories.map(category => ({
-        name: category.name,
-        lessons: category.lessons.map(lesson => ({
-          lesson: lesson.lessonNumber,
-          words: lesson.words.map(word => ({
-            question: word.id, // 使用word ID作为question
-            english: word.english,
-            chinese: word.chinese
-          }))
-        }))
-      }));
+      // 转换为导出格式（与导入格式一致）
+      // 每个分类导出一个数组
+      const exportData = categories.map(category => {
+        const words = [];
+        for (const lesson of category.lessons) {
+          for (const word of lesson.words) {
+            words.push({
+              lesson: lesson.lessonNumber,
+              question: word.id,
+              english: word.english,
+              phonetic: word.phonetic || '',
+              chinese: word.chinese
+            });
+          }
+        }
+        return {
+          categoryName: category.name,
+          words
+        };
+      });
 
       // 统计信息
       const stats = {
@@ -608,7 +626,8 @@ class AdminService {
   }
 
   /**
-   * 导出指定分类的数据
+   * 导出指定分类的数据（与导入格式一致）
+   * 格式：[{lesson, question, english, phonetic, chinese}]
    * @param {number} categoryId - 分类ID
    * @returns {Promise<Object>} 导出的数据
    */
@@ -631,23 +650,24 @@ class AdminService {
         throw new Error('分类不存在');
       }
 
-      // 转换为导出格式
-      const exportData = {
-        name: category.name,
-        lessons: category.lessons.map(lesson => ({
-          lesson: lesson.lessonNumber,
-          words: lesson.words.map(word => ({
+      // 转换为导出格式（与导入格式一致）
+      const exportData = [];
+      for (const lesson of category.lessons) {
+        for (const word of lesson.words) {
+          exportData.push({
+            lesson: lesson.lessonNumber,
             question: word.id,
             english: word.english,
+            phonetic: word.phonetic || '',
             chinese: word.chinese
-          }))
-        }))
-      };
+          });
+        }
+      }
 
       const stats = {
         categoryName: category.name,
         lessons: category.lessons.length,
-        words: category.lessons.reduce((sum, l) => sum + l.words.length, 0)
+        words: exportData.length
       };
 
       logger.info(`导出分类 ${categoryId}: ${stats.lessons} 课程, ${stats.words} 单词`);
@@ -663,7 +683,8 @@ class AdminService {
   }
 
   /**
-   * 导出指定课程的数据
+   * 导出指定课程的数据（与导入格式一致）
+   * 格式：[{lesson, question, english, phonetic, chinese}]
    * @param {number} lessonId - 课程ID
    * @returns {Promise<Object>} 导出的数据
    */
@@ -688,11 +709,12 @@ class AdminService {
         throw new Error('课程不存在');
       }
 
-      // 转换为导出格式（简化版本）
+      // 转换为导出格式（与导入格式一致）
       const exportData = lesson.words.map(word => ({
         lesson: lesson.lessonNumber,
         question: word.id,
         english: word.english,
+        phonetic: word.phonetic || '',
         chinese: word.chinese
       }));
 
@@ -716,6 +738,8 @@ class AdminService {
 
   /**
    * 导出所有课程为TXT文件并打包成ZIP
+   * 每个分类一个文件夹，里面一个txt文件包含所有单词
+   * 格式：[{lesson, question, english, phonetic, chinese}]
    * @returns {Promise<stream>} ZIP文件流
    */
   async exportAllAsTxtZip() {
@@ -740,23 +764,30 @@ class AdminService {
         zlib: { level: 9 }
       });
 
-      // 为每个课程的每个单词创建txt文件
+      // 每个分类一个文件夹，里面一个txt文件
       for (const category of categories) {
+        // 收集该分类下所有单词
+        const allWords = [];
         for (const lesson of category.lessons) {
-          if (lesson.words.length === 0) continue;
-
-          // 生成txt内容
-          let txtContent = '';
           for (const word of lesson.words) {
-            txtContent += `question: ${word.id}\n`;
-            txtContent += `english: ${word.english}\n`;
-            txtContent += `chinese: ${word.chinese}\n\n`;
+            allWords.push({
+              lesson: lesson.lessonNumber,
+              question: word.id,
+              english: word.english,
+              phonetic: word.phonetic || '',
+              chinese: word.chinese
+            });
           }
-
-          // 添加到zip
-          const fileName = `${category.name}/Lesson${lesson.lessonNumber}.txt`;
-          archive.append(txtContent, { name: fileName });
         }
+
+        if (allWords.length === 0) continue;
+
+        // 生成JSON格式的txt内容
+        const txtContent = JSON.stringify(allWords, null, 2);
+
+        // 每个分类一个txt文件
+        const fileName = `${category.name}/${category.name}.txt`;
+        archive.append(txtContent, { name: fileName });
       }
 
       logger.info(`导出TXT ZIP: ${categories.length} 分类`);

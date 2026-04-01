@@ -4,12 +4,50 @@ import logger from '../utils/logger.js';
 
 /**
  * 简化课程导入服务
- * 支持新概念英语格式的 JSON 导入
+ * 支持两种格式：
+ * 1. 简化格式：[{lesson?, question, english, chinese, phonetic?}]
+ * 2. 导出格式：[{category, lessons: [{lesson, words: [{en, cn, phonetic}]}]}]
  */
 class SimpleLessonImportService {
   /**
-   * JSON Schema 验证
-   * 格式：[{lesson?, question, english, chinese}]
+   * 检测数据格式类型
+   * @returns {'export'|'simple'} 格式类型
+   */
+  detectFormat(data) {
+    // 如果是数组且第一个元素有 category 和 lessons 字段，则是导出格式
+    if (Array.isArray(data) && data.length > 0 && data[0].category && data[0].lessons) {
+      return 'export';
+    }
+    return 'simple';
+  }
+
+  /**
+   * 导出格式的 Schema
+   * 格式：[{category, lessons: [{lesson, words: [{en, cn, phonetic?}]}]}]
+   */
+  getExportFormatSchema() {
+    return Joi.array().items(
+      Joi.object({
+        category: Joi.string().required(),
+        lessons: Joi.array().items(
+          Joi.object({
+            lesson: Joi.number().integer().positive().required(),
+            words: Joi.array().items(
+              Joi.object({
+                en: Joi.string().required(),
+                cn: Joi.string().required(),
+                phonetic: Joi.string().allow('').optional()
+              })
+            ).min(1).required()
+          })
+        ).min(1).required()
+      })
+    ).min(1);
+  }
+
+  /**
+   * 简化格式的 Schema
+   * 格式：[{lesson?, question, english, chinese, phonetic?}]
    */
   getImportSchema() {
     return Joi.array().items(
@@ -17,8 +55,9 @@ class SimpleLessonImportService {
         lesson: Joi.number().integer().positive().optional(),
         question: Joi.number().integer().positive().required(),
         english: Joi.string().required(),
-        chinese: Joi.string().required()
-      }).unknown(false) // 不允许额外字段
+        chinese: Joi.string().required(),
+        phonetic: Joi.string().allow('').optional()
+      })
     ).min(1);
   }
 
@@ -89,13 +128,149 @@ class SimpleLessonImportService {
 
   /**
    * 从 JSON 导入数据
+   * 支持两种格式：
+   * 1. 简化格式：[{lesson?, question, english, chinese}]
+   * 2. 导出格式：[{category, lessons: [{lesson, words: [{en, cn, phonetic}]}]}]
    * @param {Array} data - JSON 数组数据
-   * @param {string} categoryName - 分类名称
+   * @param {string} categoryName - 分类名称（简化格式时使用）
    * @returns {Promise<Object>} 导入结果
    */
   async importFromJSON(data, categoryName) {
+    // 检测格式类型
+    const formatType = this.detectFormat(data);
+
+    if (formatType === 'export') {
+      // 导出格式：逐个分类导入
+      return await this.importExportFormat(data);
+    } else {
+      // 简化格式：按原逻辑处理
+      return await this.importSimpleFormat(data, categoryName);
+    }
+  }
+
+  /**
+   * 导入导出格式的数据
+   * @param {Array} data - 导出格式数据
+   */
+  async importExportFormat(data) {
+    // 验证格式
+    const schema = this.getExportFormatSchema();
+    const { error } = schema.validate(data, { abortEarly: false });
+    if (error) {
+      throw new Error(`导出格式验证失败: ${error.details[0].message}`);
+    }
+
+    const results = [];
+    let totalLessons = 0;
+    let totalWords = 0;
+
+    for (const categoryData of data) {
+      const result = await this.importCategoryFromExportFormat(categoryData);
+      results.push(result);
+      totalLessons += result.lessonsCreated;
+      totalWords += result.totalWords;
+    }
+
+    return {
+      success: true,
+      message: `成功导入 ${results.length} 个分类，${totalLessons} 个课程，${totalWords} 个单词`,
+      results
+    };
+  }
+
+  /**
+   * 从导出格式导入单个分类
+   */
+  async importCategoryFromExportFormat(categoryData) {
+    const { category: categoryName, lessons } = categoryData;
     const transaction = await sequelize.transaction();
-    
+
+    try {
+      // 查找或创建分类
+      let category = await Category.findOne({
+        where: { name: categoryName },
+        transaction
+      });
+
+      if (!category) {
+        category = await Category.create(
+          { name: categoryName },
+          { transaction }
+        );
+        logger.info(`创建新分类: ${categoryName}`);
+      }
+
+      const createdLessons = [];
+      let totalWords = 0;
+
+      for (const lessonData of lessons) {
+        const { lesson: lessonNumber, words } = lessonData;
+
+        // 查找或创建课程
+        let lesson = await Lesson.findOne({
+          where: {
+            categoryId: category.id,
+            lessonNumber
+          },
+          transaction
+        });
+
+        if (!lesson) {
+          lesson = await Lesson.create(
+            {
+              categoryId: category.id,
+              lessonNumber
+            },
+            { transaction }
+          );
+          logger.info(`创建新课程: ${categoryName} - 第${lessonNumber}课`);
+        }
+
+        // 批量插入单词
+        const wordRecords = words.map(word => ({
+          lessonId: lesson.id,
+          english: word.en,
+          chinese: word.cn,
+          phonetic: word.phonetic || null
+        }));
+
+        await Word.bulkCreate(wordRecords, {
+          transaction,
+          ignoreDuplicates: true
+        });
+
+        totalWords += words.length;
+        createdLessons.push({
+          lessonNumber,
+          wordCount: words.length
+        });
+      }
+
+      await transaction.commit();
+
+      logger.info(`导入分类成功: ${categoryName}, ${createdLessons.length} 个课程, ${totalWords} 个单词`);
+
+      return {
+        category: categoryName,
+        categoryId: category.id,
+        lessonsCreated: createdLessons.length,
+        totalWords,
+        lessons: createdLessons
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * 导入简化格式的数据
+   * @param {Array} data - 简化格式数据
+   * @param {string} categoryName - 分类名称
+   */
+  async importSimpleFormat(data, categoryName) {
+    const transaction = await sequelize.transaction();
+
     try {
       // 验证 JSON 格式
       const validation = this.validateJSON(data);
@@ -156,7 +331,8 @@ class SimpleLessonImportService {
           const wordRecords = items.map(item => ({
             lessonId: lesson.id,
             english: item.english,
-            chinese: item.chinese
+            chinese: item.chinese,
+            phonetic: item.phonetic || null
           }));
 
           await Word.bulkCreate(wordRecords, {
@@ -200,7 +376,8 @@ class SimpleLessonImportService {
         const wordRecords = sortedData.map(item => ({
           lessonId: lesson.id,
           english: item.english,
-          chinese: item.chinese
+          chinese: item.chinese,
+          phonetic: item.phonetic || null
         }));
 
         await Word.bulkCreate(wordRecords, {

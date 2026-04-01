@@ -50,7 +50,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" fixed="right" width="200">
+      <el-table-column label="操作" fixed="right" width="240">
         <template #default="{ row }">
           <el-button link size="small" type="primary" @click="handleSetPermissions(row)">权限</el-button>
           <el-button link size="small" @click="handleEditUsername(row)">改名</el-button>
@@ -58,6 +58,7 @@
           <el-button link size="small" :type="row.isActive ? 'danger' : 'success'" @click="handleToggleStatus(row)">
             {{ row.isActive ? '禁用' : '启用' }}
           </el-button>
+          <el-button link size="small" type="danger" @click="handleDeleteUser(row)" :disabled="row.isSuperAdmin">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -91,6 +92,7 @@
           <el-button size="small" :type="user.isActive ? 'danger' : 'success'" @click="handleToggleStatus(user)">
             {{ user.isActive ? '禁用' : '启用' }}
           </el-button>
+          <el-button size="small" type="danger" @click="handleDeleteUser(user)" :disabled="user.isSuperAdmin">删除</el-button>
         </div>
       </div>
     </div>
@@ -459,6 +461,39 @@ const confirmPermissions = async () => {
     ElMessage.error(error.message || '更新权限失败');
   } finally {
     submitting.value = false;
+  }
+};
+
+// 删除用户
+const handleDeleteUser = async (user) => {
+  if (user.isSuperAdmin) {
+    ElMessage.warning('不能删除超级管理员');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除用户 "${user.username}" 吗？此操作不可恢复！`,
+      '删除确认',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    );
+    
+    const response = await adminService.deleteUser(user.id);
+    
+    if (response.success) {
+      ElMessage.success('用户已删除');
+      loadUsers();
+    } else {
+      ElMessage.error(response.message || '删除失败');
+    }
+  } catch (error) {
+    if (error === 'cancel') return;
+    ElMessage.error(error.message || '删除失败');
   }
 };
 </script>

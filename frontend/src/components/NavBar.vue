@@ -6,6 +6,16 @@
       </div>
       
       <div class="navbar-right">
+        <!-- 设置按钮 -->
+        <el-button 
+          link 
+          class="settings-btn"
+          @click="openSettings"
+          title="设置"
+        >
+          <el-icon><Setting /></el-icon>
+        </el-button>
+        
         <el-button 
           v-if="isAdmin" 
           type="primary" 
@@ -51,6 +61,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { User, HomeFilled, Setting, SwitchButton } from '@element-plus/icons-vue';
 import authService from '../services/auth';
+import { openSettings } from '../utils/eventBus';
 
 const router = useRouter();
 const username = ref('');
@@ -180,6 +191,16 @@ const handleLogout = async () => {
   padding: 8px;
 }
 
+.settings-btn {
+  font-size: 20px;
+  padding: 8px;
+  color: #606266;
+}
+
+.settings-btn:hover {
+  color: #409eff;
+}
+
 .admin-btn .btn-text {
   display: inline;
 }
@@ -206,6 +227,11 @@ const handleLogout = async () => {
   }
 
   .user-button {
+    padding: 4px;
+    font-size: 18px;
+  }
+
+  .settings-btn {
     padding: 4px;
     font-size: 18px;
   }

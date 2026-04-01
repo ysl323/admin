@@ -14,6 +14,7 @@ import wordMasteryRoutes from './routes/wordMastery.js';
 import ttsRoutes from './routes/tts.js';
 import audioCacheRoutes from './routes/audioCache.js';
 import captchaRoutes from './routes/captcha.js';
+import userSettingsRoutes from './routes/userSettings.js';
 import dailyTasks from './jobs/dailyTasks.js';
 
 // 加载环境变量
@@ -47,6 +48,7 @@ app.use('/api/word-mastery', wordMasteryRoutes);
 app.use('/api/tts', ttsRoutes);
 app.use('/api/audio-cache', audioCacheRoutes);
 app.use('/api/captcha', captchaRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
 
 // 健康检查端点
 app.get('/health', (req, res) => {

@@ -31,10 +31,6 @@
             <el-icon><Upload /></el-icon>
             一键导入课程
           </el-button>
-          <el-button type="info" @click="handleExportAll">
-            <el-icon><Download /></el-icon>
-            一键导出课程
-          </el-button>
           <el-button type="warning" @click="handleExportTxtZip">
             <el-icon><Download /></el-icon>
             导出TXT(ZIP)
@@ -754,50 +750,6 @@ const importLesson = async () => {
   }
 };
 
-// 导出操作
-const handleExportAll = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要导出所有课程数据吗？',
-      '确认导出',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    );
-
-    ElMessage.info('正在导出数据，请稍候...');
-
-    const response = await adminService.exportAllData();
-
-    if (response.success) {
-      // 创建JSON文件并下载
-      const jsonString = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `course-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      ElMessage.success(
-        `导出成功！${response.stats.categories} 个分类，${response.stats.lessons} 个课程，${response.stats.words} 个单词`
-      );
-    } else {
-      ElMessage.error(response.message || '导出失败');
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '导出失败');
-    }
-  }
-};
-
 // 导出TXT ZIP
 const handleExportTxtZip = async () => {
   try {
@@ -836,13 +788,14 @@ const exportCategory = async (category) => {
     const response = await adminService.exportCategoryData(category.id);
 
     if (response.success) {
+      // 导出格式：[{lesson, question, english, phonetic, chinese}]
       const jsonString = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
+      const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${category.name}-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `${category.name}.txt`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -863,18 +816,26 @@ const exportLesson = async (lesson) => {
   try {
     ElMessage.info(`正在导出第${lesson.lessonNumber}课...`);
 
-    const blob = await adminService.exportLessonTxt(lesson.id);
-    const url = URL.createObjectURL(blob);
+    const response = await adminService.exportLessonData(lesson.id);
     
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Lesson${lesson.lessonNumber}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (response.success) {
+      // 导出格式：[{lesson, question, english, phonetic, chinese}]
+      const jsonString = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([jsonString], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Lesson${lesson.lessonNumber}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-    ElMessage.success('导出成功！');
+      ElMessage.success(`导出成功！${response.stats.words} 个单词`);
+    } else {
+      ElMessage.error(response.message || '导出失败');
+    }
   } catch (error) {
     ElMessage.error(error.message || '导出失败');
   }

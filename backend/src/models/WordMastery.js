@@ -58,50 +58,15 @@ const WordMastery = sequelize.define('WordMastery', {
     {
       unique: true,
       fields: ['userId', 'lessonId', 'wordId'],
-      name: 'unique_user_lesson_word_mastery',
-      comment: '确保每个用户在每个课程中对每个单词只有一条掌握记录'
+      name: 'unique_user_lesson_word_mastery'
     },
-    {
-      fields: ['userId']
-    },
-    {
-      fields: ['lessonId']
-    },
-    {
-      fields: ['wordId']
-    },
-    {
-      fields: ['masteredAt']
-    }
+    { fields: ['userId'] },
+    { fields: ['lessonId'] },
+    { fields: ['wordId'] },
+    { fields: ['masteredAt'] }
   ]
 });
 
-// 关联关系
-WordMastery.associate = (models) => {
-  WordMastery.belongsTo(models.User, {
-    foreignKey: 'userId',
-    as: 'user'
-  });
-
-  WordMastery.belongsTo(models.Lesson, {
-    foreignKey: 'lessonId',
-    as: 'lesson'
-  });
-
-  WordMastery.belongsTo(models.Word, {
-    foreignKey: 'wordId',
-    as: 'word'
-  });
-};
-
-// 实例方法
-WordMastery.prototype.markReview = async function() {
-  this.reviewCount += 1;
-  this.lastReviewAt = new Date();
-  await this.save();
-};
-
-// 类方法
 WordMastery.markAsMastered = async function(userId, lessonId, wordId) {
   try {
     const [mastery, created] = await this.findOrCreate({
@@ -115,13 +80,9 @@ WordMastery.markAsMastered = async function(userId, lessonId, wordId) {
       }
     });
 
-    if (created) {
-      console.log(`Word ${wordId} marked as mastered by user ${userId}`);
-    } else {
-      // 已存在记录，更新掌握时间
+    if (!created) {
       mastery.masteredAt = new Date();
       await mastery.save();
-      console.log(`Word ${wordId} mastery updated for user ${userId}`);
     }
 
     return mastery;
@@ -136,14 +97,7 @@ WordMastery.unmarkAsMastered = async function(userId, wordId) {
     const result = await this.destroy({
       where: { userId, wordId }
     });
-
-    if (result > 0) {
-      console.log(`Word ${wordId} unmarked as mastered by user ${userId}`);
-      return true;
-    }
-
-    console.log(`Word ${wordId} was not marked as mastered by user ${userId}`);
-    return false;
+    return result > 0;
   } catch (error) {
     console.error('Failed to unmark word as mastered:', error);
     throw error;
@@ -157,7 +111,6 @@ WordMastery.getUserLessonMastery = async function(userId, lessonId) {
       attributes: ['wordId'],
       order: [['masteredAt', 'ASC']]
     });
-
     return masteryRecords.map(record => record.wordId);
   } catch (error) {
     console.error('Failed to get user lesson mastery:', error);
@@ -176,7 +129,6 @@ WordMastery.getUserMasteryStats = async function(userId) {
       group: ['lessonId'],
       order: [['lessonId', 'ASC']]
     });
-
     return stats.map(stat => ({
       lessonId: stat.lessonId,
       masteredCount: parseInt(stat.dataValues.masteredCount)
@@ -205,11 +157,7 @@ WordMastery.getWordMasteryRate = async function(lessonId) {
 
     const masteryRate = Math.round((masteredWords / totalWords) * 100);
 
-    return {
-      totalWords,
-      masteredWords,
-      masteryRate
-    };
+    return { totalWords, masteredWords, masteryRate };
   } catch (error) {
     console.error('Failed to get word mastery rate:', error);
     throw error;

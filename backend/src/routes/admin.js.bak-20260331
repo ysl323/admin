@@ -1202,8 +1202,6 @@ router.post('/test-tts', async (req, res) => {
 /**
  * GET /api/admin/export/txt-zip
  * 导出所有课程为TXT文件并打包成ZIP
- * 每个分类一个文件夹，里面一个txt文件包含所有单词
- * 格式：[{lesson, question, english, phonetic, chinese}]
  */
 router.get('/export/txt-zip', async (req, res) => {
   try {
@@ -1224,8 +1222,7 @@ router.get('/export/txt-zip', async (req, res) => {
 
 /**
  * GET /api/admin/export/all
- * 导出所有课程数据（与导入格式一致）
- * 格式：[{categoryName, words: [{lesson, question, english, phonetic, chinese}]}]
+ * 导出所有课程数据
  */
 router.get('/export/all', async (req, res) => {
   try {
@@ -1248,8 +1245,7 @@ router.get('/export/all', async (req, res) => {
 
 /**
  * GET /api/admin/export/category/:categoryId
- * 导出指定分类的数据（与导入格式一致）
- * 格式：[{lesson, question, english, phonetic, chinese}]
+ * 导出指定分类的数据
  */
 router.get('/export/category/:categoryId', async (req, res) => {
   try {
@@ -1288,8 +1284,7 @@ router.get('/export/category/:categoryId', async (req, res) => {
 
 /**
  * GET /api/admin/export/lesson/:lessonId
- * 导出指定课程的数据（与导入格式一致）
- * 格式：[{lesson, question, english, phonetic, chinese}]
+ * 导出指定课程的数据
  */
 router.get('/export/lesson/:lessonId', async (req, res) => {
   try {
@@ -1323,6 +1318,46 @@ router.get('/export/lesson/:lessonId', async (req, res) => {
       message: '导出课程数据失败',
       error: error.message
     });
+  }
+});
+
+// 一键导出所有课程为JSON打包（ZIP）
+router.get('/export/all/txt', async (req, res) => {
+  try {
+    const categories = await Category.findAll({
+      include: [{
+        model: Lesson,
+        as: 'lessons',
+        include: [{ model: Word, as: 'words', order: [['id', 'ASC']] }]
+      }]
+    });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="all-lessons-${new Date().toISOString().slice(0,10)}.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    for (const cat of categories) {
+      // 一个分类一个文件，包含所有课程
+      const allWords = [];
+      for (const lesson of cat.lessons) {
+        for (const w of lesson.words) {
+          allWords.push({
+            lesson: lesson.lessonNumber,
+            question: w.id,
+            english: w.english,
+            chinese: w.chinese
+          });
+        }
+      }
+      const jsonStr = JSON.stringify(allWords, null, 2);
+      archive.append(jsonStr, { name: `${cat.name}.txt` });
+    }
+
+    archive.finalize();
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

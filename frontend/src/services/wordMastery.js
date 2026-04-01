@@ -1,4 +1,4 @@
-import request from './request';
+import api from './api';
 
 /**
  * 单词掌握状态API服务
@@ -11,7 +11,7 @@ class WordMasteryService {
    * @returns {Promise<Object>} API响应
    */
   async markAsMastered(lessonId, wordId) {
-    return request.post('/word-mastery', {
+    return api.post('/word-mastery', {
       lessonId,
       wordId
     });
@@ -23,7 +23,7 @@ class WordMasteryService {
    * @returns {Promise<Object>} API响应
    */
   async unmarkAsMastered(wordId) {
-    return request.delete(`/word-mastery/${wordId}`);
+    return api.delete(`/word-mastery/${wordId}`);
   }
 
   /**
@@ -32,7 +32,7 @@ class WordMasteryService {
    * @returns {Promise<Array>} 掌握的单词ID数组
    */
   async getLessonMastery(lessonId) {
-    const response = await request.get(`/word-mastery/lesson/${lessonId}`);
+    const response = await api.get(`/word-mastery/lesson/${lessonId}`);
     return response.data?.masteredWordIds || [];
   }
 
@@ -41,7 +41,7 @@ class WordMasteryService {
    * @returns {Promise<Object>} 统计信息
    */
   async getUserMasteryStats() {
-    const response = await request.get('/word-mastery/stats');
+    const response = await api.get('/word-mastery/stats');
     return response.data?.stats || [];
   }
 
@@ -51,7 +51,7 @@ class WordMasteryService {
    * @returns {Promise<Object>} 掌握率信息
    */
   async getLessonMasteryRate(lessonId) {
-    return request.get(`/word-mastery/lesson/${lessonId}/rate`);
+    return api.get(`/word-mastery/lesson/${lessonId}/rate`);
   }
 
   /**
@@ -60,7 +60,7 @@ class WordMasteryService {
    * @returns {Promise<Object>} 同步结果
    */
   async syncMastery(masteryData) {
-    return request.post('/word-mastery/sync', {
+    return api.post('/word-mastery/sync', {
       masteryData
     });
   }

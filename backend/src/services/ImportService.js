@@ -32,7 +32,8 @@ class ImportService {
               cn: Joi.string().required().messages({
                 'string.empty': '中文翻译不能为空',
                 'any.required': '中文翻译是必需的'
-              })
+              }),
+              phonetic: Joi.string().allow('').optional()
             })
           ).min(1).required().messages({
             'array.min': '每个课程至少需要一个单词',
@@ -75,10 +76,37 @@ class ImportService {
 
   /**
    * 从 JSON 导入数据
-   * @param {Object} data - JSON 数据
+   * 支持两种格式：
+   * 1. 单个分类对象：{category, lessons}
+   * 2. 分类数组：[{category, lessons}, ...]
+   * @param {Object|Array} data - JSON 数据
    * @returns {Promise<Object>} 导入结果
    */
   async importFromJSON(data) {
+    // 如果是数组，逐个导入
+    if (Array.isArray(data)) {
+      const results = [];
+      for (const item of data) {
+        const result = await this.importSingleCategory(item);
+        results.push(result);
+      }
+      return {
+        success: true,
+        message: `成功导入 ${results.length} 个分类`,
+        results
+      };
+    }
+    
+    // 单个分类对象
+    return await this.importSingleCategory(data);
+  }
+
+  /**
+   * 导入单个分类
+   * @param {Object} data - 单个分类数据 {category, lessons}
+   * @returns {Promise<Object>} 导入结果
+   */
+  async importSingleCategory(data) {
     const transaction = await sequelize.transaction();
     
     try {
@@ -140,7 +168,8 @@ class ImportService {
         const wordRecords = words.map(word => ({
           lessonId: lesson.id,
           english: word.en,
-          chinese: word.cn
+          chinese: word.cn,
+          phonetic: word.phonetic || null
         }));
 
         await Word.bulkCreate(wordRecords, {

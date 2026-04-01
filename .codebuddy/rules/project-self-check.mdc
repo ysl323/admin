@@ -1,0 +1,178 @@
+---
+description: 
+alwaysApply: true
+enabled: true
+updatedAt: 2026-04-01T05:31:35.268Z
+provider: 
+---
+
+# 项目自检规则
+
+当用户说"规则自检"或"自检"时，执行以下检查流程：
+
+## 1. Linter 检查
+```
+使用 read_lints 工具检查代码错误
+- 检查是否有新增的错误
+- 只关注最近修改引入的问题
+```
+
+## 2. 文件同步校验 (MD5)
+```
+本地MD5: powershell -Command "Get-FileHash 'e:\demo\my1\my1\frontend\dist\assets\LearningPage-*.js' -Algorithm MD5"
+服务器MD5: ssh root@47.97.185.117 "md5sum /www/wwwroot/english-learning/my1/frontend/dist/assets/LearningPage-*.js"
+比对两边是否一致
+```
+
+## 3. Git 状态检查
+```
+cd e:/demo/my1/my1 && git status --short
+检查是否有未提交的修改
+```
+
+## 4. 构建状态检查
+```
+检查 frontend/dist 目录是否存在
+- 如果不存在或需要重新构建，执行：
+  powershell -Command "cd 'e:\demo\my1\my1\frontend'; npm run build"
+```
+
+## 5. 服务器部署状态
+```
+ssh root@47.97.185.117 "ls -la /www/wwwroot/english-learning/my1/frontend/dist/"
+检查服务器文件是否最新
+```
+
+## 6. 输出格式
+
+以表格形式输出检查结果：
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| Linter | ✅/❌ | 错误数量 |
+| MD5同步 | ✅/❌ | 本地vs服务器 |
+| Git | ✅/⚠️ | 未提交文件数 |
+| 构建 | ✅/❌ | dist目录状态 |
+| 部署 | ✅/❌ | 服务器状态 |
+
+---
+
+## 服务器配置信息
+```
+SERVER_IP=47.97.185.117
+SERVER_USER=root
+FRONTEND_PATH=/www/wwwroot/english-learning/my1/frontend/dist
+BACKEND_PATH=/www/wwwroot/english-learning/my1/backend
+PM2_PROCESS_NAME=english-backend
+```
+
+## 部署命令（如需部署）
+```bash
+# 前端部署
+scp -r e:/demo/my1/my1/frontend/dist/* root@47.97.185.117:/www/wwwroot/english-learning/my1/frontend/dist/
+ssh root@47.97.185.117 "nginx -s reload"
+
+# 后端重启
+ssh root@47.97.185.117 "cd /www/wwwroot/english-learning/my1/backend && pm2 restart english-backend"
+```
+
+---
+
+## 音频缓存架构
+
+### 三级缓存机制
+```
+┌─────────────────────────────────────────────────────────┐
+│                    第三级：服务器缓存                     │
+│   首次调用API → 保存到服务器 → 后续请求直接返回缓存文件   │
+│   位置：/www/wwwroot/.../backend/audio-cache/*.mp3      │
+│   数据库：AudioCache表记录缓存元数据                      │
+└─────────────────────────────────────────────────────────┘
+                           ▲
+                           │ HTTP响应带 Cache-Control
+┌─────────────────────────────────────────────────────────┐
+│                    第二级：浏览器HTTP缓存                 │
+│   HTTP缓存头让浏览器自动缓存音频响应                      │
+│   有效期：1天                                            │
+└─────────────────────────────────────────────────────────┘
+                           ▲
+                           │ 直接使用缓存URL
+┌─────────────────────────────────────────────────────────┐
+│                    第一级：前端内存缓存                   │
+│   TTS: Map存储 text → audioUrl 映射                     │
+│   音效: AudioBuffer缓存正确/错误音效                     │
+│   限制：LRU策略，最多100条TTS缓存                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 关键文件
+| 文件 | 用途 |
+|------|------|
+| `frontend/src/services/tts.js` | TTS服务，前端内存缓存 |
+| `frontend/src/views/LearningPage.vue` | 音效播放，AudioBuffer缓存 |
+| `backend/src/services/TTSService.js` | 火山引擎TTS调用，服务器缓存 |
+| `backend/src/services/AudioCacheService.js` | 音频缓存管理服务 |
+
+---
+
+## 常见问题排查
+
+### 前端问题
+1. **白屏/加载失败** → 检查nginx配置、清除浏览器缓存
+2. **API请求失败** → 检查后端是否运行 `pm2 list`
+3. **样式不更新** → 清除dist目录重新构建
+4. **音频不播放** → 检查浏览器控制台，确认TTS服务正常
+
+### 后端问题
+1. **500错误** → 检查PM2日志 `pm2 logs english-backend`
+2. **数据库错误** → 检查数据库路径和权限
+3. **TTS不工作** → 检查火山引擎token配置
+
+### 快速修复命令
+```bash
+# 重启后端
+ssh root@47.97.185.117 "pm2 restart english-backend"
+
+# 查看后端日志
+ssh root@47.97.185.117 "pm2 logs english-backend --lines 50"
+
+# 重载nginx
+ssh root@47.97.185.117 "nginx -s reload"
+
+# 清理旧版本文件
+ssh root@47.97.185.117 "cd /www/wwwroot/english-learning/my1/frontend/dist/assets && ls -lt | tail -n +30 | awk '{print \$NF}' | xargs rm -f"
+```
+
+---
+
+## 项目核心文件清单
+| 文件 | 用途 |
+|------|------|
+| `frontend/src/stores/learning.js` | 学习状态管理，DisplayMode/SequenceMode枚举 |
+| `frontend/src/views/LearningPage.vue` | 学习页面主组件，音效反馈 |
+| `frontend/src/components/LearningModeSelector.vue` | 模式选择器（双下拉框） |
+| `frontend/src/services/tts.js` | TTS服务，前端缓存 |
+| `frontend/src/utils/AudioManager.js` | 音频播放管理 |
+| `frontend/src/strategies/RandomStrategy.ts` | 随机学习策略 |
+| `frontend/src/strategies/LoopStrategy.ts` | 循环学习策略 |
+| `frontend/src/strategies/SequentialStrategy.ts` | 顺序学习策略 |
+| `frontend/src/strategies/RandomLoopStrategy.ts` | 随机循环策略 |
+| `backend/src/index.js` | 后端入口 |
+| `backend/src/routes/learning.js` | 学习API路由 |
+| `backend/src/routes/tts.js` | TTS API路由 |
+| `backend/src/services/TTSService.js` | 火山引擎TTS服务 |
+| `backend/src/services/AudioCacheService.js` | 音频缓存服务 |
+
+---
+
+## Git提交规范
+```
+feat: 新功能
+fix: 修复bug
+perf: 性能优化
+refactor: 重构
+docs: 文档
+style: 格式
+test: 测试
+chore: 构建/工具
+```

@@ -1,0 +1,20 @@
+# 部署配置
+# 最后更新: 2026-03-31
+
+SERVER_IP=47.97.185.117
+SERVER_USER=root
+DEPLOY_PATH=/www/wwwroot/english-learning/my1
+
+# 前端部署路径（nginx 指向 dist 目录！）
+FRONTEND_PATH=/www/wwwroot/english-learning/my1/frontend/dist
+
+# 后端部署路径
+BACKEND_PATH=/www/wwwroot/english-learning/my1/backend
+
+# PM2 进程名
+PM2_PROCESS_NAME=english-backend
+
+# 数据库路径
+DATABASE_PATH=/www/wwwroot/english-learning/my1/data/database.sqlite
+
+# 注意：nginx 配置 root 指向 /frontend/dist，不是 /frontend

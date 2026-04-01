@@ -35,6 +35,11 @@ const Word = sequelize.define(
         len: [1, 255]
       }
     },
+    phonetic: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'phonetic'
+    },
     audioCacheUrl: {
       type: DataTypes.STRING(500),
       allowNull: true,

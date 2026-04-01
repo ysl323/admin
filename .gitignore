@@ -56,3 +56,7 @@ ecosystem.config.js
 # Backup
 *.backup
 *.bak
+server-backups/
+*.zip
+*.tar.gz
+*.gz

@@ -578,11 +578,14 @@ h2 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .toolbar > div {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .text-ellipsis {
@@ -597,5 +600,118 @@ h2 {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .cache-management {
+    padding: 10px;
+  }
+
+  h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  /* 统计卡片：每行2个 */
+  .stats-row .el-col {
+    width: 50% !important;
+    max-width: 50%;
+    margin-bottom: 10px;
+  }
+
+  .stat-card {
+    margin-bottom: 0;
+  }
+
+  .stat-content {
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  /* 工具栏：按钮缩小，换行 */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toolbar .el-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .toolbar .el-button .el-icon {
+    margin-right: 2px;
+  }
+
+  .toolbar .el-input {
+    width: 100% !important;
+    margin-top: 10px;
+  }
+
+  /* 表格：横向滚动 */
+  .el-table {
+    font-size: 12px;
+  }
+
+  .el-table .el-button--small {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+
+  /* 分页简化 */
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pagination :deep(.el-pagination__sizes),
+  .pagination :deep(.el-pagination__jump) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .cache-management {
+    padding: 8px;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .toolbar .el-button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
 }
 </style>

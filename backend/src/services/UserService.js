@@ -493,6 +493,44 @@ class UserService {
       throw error;
     }
   }
+
+  /**
+   * 删除用户
+   * @param {number} userId - 用户 ID
+   * @param {number} operatorId - 操作者 ID（防止删除自己）
+   * @returns {Promise<Object>} 删除结果
+   */
+  async deleteUser(userId, operatorId) {
+    try {
+      // 不能删除自己
+      if (userId === operatorId) {
+        throw new Error('不能删除自己的账号');
+      }
+
+      const user = await User.findByPk(userId);
+      if (!user) {
+        throw new Error('用户不存在');
+      }
+
+      // 不能删除超级管理员
+      if (user.isSuperAdmin) {
+        throw new Error('不能删除超级管理员');
+      }
+
+      const username = user.username;
+      await user.destroy();
+
+      logger.info(`管理员删除用户: ${username}`);
+
+      return {
+        success: true,
+        message: `用户 ${username} 已删除`
+      };
+    } catch (error) {
+      logger.error('删除用户失败:', error);
+      throw error;
+    }
+  }
 }
 
 export default new UserService();

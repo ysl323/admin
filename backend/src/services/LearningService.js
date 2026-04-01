@@ -107,7 +107,7 @@ class LearningService {
 
       const words = await Word.findAll({
         where: { lessonId },
-        attributes: ['id', 'english', 'chinese', 'audioCacheUrl', 'createdAt'],
+        attributes: ['id', 'english', 'chinese', 'phonetic', 'audioCacheUrl', 'createdAt'],
         order: [['id', 'ASC']]
       });
 
