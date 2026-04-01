@@ -637,6 +637,8 @@ const handleMultiWordSubmit = async () => {
         message: '正确！'
       };
       showAnswer.value = true;
+      playFeedbackSound(true); // 播放正确音效
+      playFeedbackSound(true); // 播放正确音效
 
       // 1秒后自动跳转到下一题
       setTimeout(async () => {
@@ -675,6 +677,7 @@ const handleMultiWordSubmit = async () => {
         type: 'wrong',
         message: `${correctCount}/${wordParts.value.length} 个单词正确`
       };
+      playFeedbackSound(false); // 播放错误音效
       
       // 提交错误答案到学习状态管理
       await learningStore.submitAnswer(currentWord.value.id, false);
@@ -705,6 +708,62 @@ const handleMultiWordSubmit = async () => {
     ElMessage.error(error.message || '检查答案失败');
   } finally {
     isChecking.value = false;
+  }
+};
+
+// 播放反馈音效
+const playFeedbackSound = (isCorrect) => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (isCorrect) {
+      // 正确音效：清脆的风铃声（高频正弦波，快速衰减）
+      const playBellTone = (freq, startTime, duration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, startTime);
+        
+        // 快速衰减，清脆感
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+      
+      const now = audioContext.currentTime;
+      // 风铃和弦音：C5, E5, G5, C6
+      playBellTone(523.25, now, 0.3);
+      playBellTone(659.25, now + 0.05, 0.25);
+      playBellTone(783.99, now + 0.1, 0.2);
+      playBellTone(1046.50, now + 0.15, 0.15);
+      
+    } else {
+      // 错误音效：沉闷警报声（低频，较长）
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+      oscillator.frequency.linearRampToValueAtTime(100, audioContext.currentTime + 0.3);
+      
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.15);
+      gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.4);
+    }
+  } catch (error) {
+    console.warn('音效播放失败:', error);
   }
 };
 
@@ -783,6 +842,8 @@ const handleSubmit = async () => {
         message: '正确！'
       };
       showAnswer.value = true;
+      playFeedbackSound(true); // 播放正确音效
+      playFeedbackSound(true); // 播放正确音效
 
       // 1秒后自动跳转到下一题
       setTimeout(async () => {
@@ -820,6 +881,7 @@ const handleSubmit = async () => {
         type: 'wrong',
         message: '错误'
       };
+      playFeedbackSound(false); // 播放错误音效
       
       // 提交错误答案到学习状态管理
       await learningStore.submitAnswer(currentWord.value.id, false);
