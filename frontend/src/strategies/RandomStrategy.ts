@@ -16,14 +16,9 @@ export class RandomStrategy extends BaseWordSelectionStrategy {
   private currentWord: Word | null = null;
 
   getNextWord(): Word | null {
-    // 如果当前轮次所有单词都已学习，开始新一轮
+    // 如果当前轮次所有单词都已学习，结束（不循环）
     if (this.unlearnedInCurrentRound.size === 0) {
-      if (this.words.length === 0) {
-        return null;
-      }
-      // 重置当前轮次的未学习集合
-      this.unlearnedInCurrentRound = new Set(this.words.map(w => w.id));
-      this.loopCount++;
+      return null;
     }
 
     // 从未学习的单词中随机选择

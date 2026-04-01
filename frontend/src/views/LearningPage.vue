@@ -28,8 +28,8 @@
             <h2>{{ lessonInfo.categoryName }} - 第 {{ lessonInfo.lessonNumber }} 课</h2>
             <div class="progress-info">
               <span class="progress-text">第 {{ currentIndex + 1 }} / {{ words.length }} 题</span>
-              <el-progress 
-                :percentage="progressPercentage" 
+              <el-progress
+                :percentage="progressPercentage"
                 :stroke-width="8"
                 style="width: 200px; margin-left: 15px;"
               />
@@ -42,15 +42,17 @@
           <div class="ultra-compact-row">
             <div class="compact-mode-section">
               <LearningModeSelector
-                :current-mode="learningStore.mode"
+                :current-display-mode="learningStore.displayMode"
+                :current-sequence-mode="learningStore.sequenceMode"
                 :disabled="learningStore.isLoading"
-                @mode-change="handleModeChange"
+                @display-mode-change="handleDisplayModeChange"
+                @sequence-mode-change="handleSequenceModeChange"
                 :compact="true"
               />
             </div>
             <div class="compact-progress-section">
               <ProgressDisplay
-                :mode="learningStore.mode"
+                :mode="learningStore.displayMode"
                 :progress="learningStore.progress"
                 :session-duration="learningStore.sessionDuration"
                 :show-performance="true"
@@ -72,6 +74,7 @@
             <!-- 英文单词（小白模式下：未掌握显示，已掌握隐藏；答对或显示答案后显示） -->
             <div v-if="showEnglish" class="english-word">
               <h1>{{ currentWord.english }}</h1>
+              <p v-if="currentWord.phonetic" class="phonetic">{{ currentWord.phonetic }}</p>
             </div>
 
             <!-- 答案输入框 - 支持多单词 -->
@@ -143,12 +146,12 @@
             <!-- 掌握按钮：仅小白模式显示 -->
             <el-button
               v-if="learningStore.isBeginnerMode"
-              type="success"
+              :type="isCurrentPageWordMastered ? 'info' : 'success'"
               :loading="learningStore.masteryLoading"
               @click="handleMarkAsMastered"
             >
               <el-icon><CircleCheckFilled /></el-icon>
-              {{ learningStore.isCurrentWordMastered ? '已掌握' : '掌握' }}
+              {{ isCurrentPageWordMastered ? '取消掌握' : '掌握' }}
             </el-button>
 
             <el-button type="primary" :loading="isPlaying" @click="handlePlayAudio">
@@ -190,6 +193,67 @@
             <el-button type="primary" @click="handleRestart">重新学习</el-button>
           </template>
         </el-dialog>
+
+        <!-- 设置对话框 -->
+        <el-dialog
+          v-model="showSettingsDialog"
+          title="设置"
+          width="500px"
+          :close-on-click-modal="false"
+          @close="closeSettings"
+        >
+          <div class="settings-content">
+            <!-- 快捷键设置 -->
+            <div class="settings-section">
+              <h3 class="section-title">快捷键设置</h3>
+              <p class="section-desc">点击快捷键区域，然后按下组合键进行设置</p>
+              
+              <div class="shortcut-list">
+                <div 
+                  v-for="(config, action) in settings.shortcuts" 
+                  :key="action"
+                  class="shortcut-item"
+                >
+                  <span class="shortcut-label">{{ config.label }}</span>
+                  <div 
+                    class="shortcut-value"
+                    :class="{ 'editing': editingShortcut === action }"
+                    @click="startEditShortcut(action)"
+                    @keydown="handleShortcutKeydown"
+                    :tabindex="editingShortcut === action ? 0 : -1"
+                    ref="shortcutInputRef"
+                  >
+                    <template v-if="editingShortcut === action">
+                      <span class="editing-hint">{{ pressedKeys.length > 0 ? formatShortcut(pressedKeys) : '请按下组合键...' }}</span>
+                    </template>
+                    <template v-else>
+                      {{ formatShortcut(config.keys) }}
+                    </template>
+                  </div>
+                  <el-button 
+                    v-if="editingShortcut === action"
+                    type="info" 
+                    size="small"
+                    @click="cancelEditShortcut"
+                  >
+                    取消
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="shortcut-actions">
+                <el-button @click="resetToDefaultShortcuts">恢复默认</el-button>
+              </div>
+            </div>
+          </div>
+          
+          <template #footer>
+            <el-button @click="closeSettings">取消</el-button>
+            <el-button type="primary" :loading="settingsLoading" @click="saveSettings">
+              保存设置
+            </el-button>
+          </template>
+        </el-dialog>
       </div>
 
       <!-- 空状态 -->
@@ -205,13 +269,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { 
-  HomeFilled, 
-  ChatDotRound, 
-  SuccessFilled, 
+import {
+  HomeFilled,
+  ChatDotRound,
+  SuccessFilled,
   CircleCloseFilled,
   ArrowLeft,
   ArrowRight,
@@ -228,6 +292,8 @@ import learningService from '../services/learning';
 import ttsService from '../services/tts';
 import AudioManager from '../utils/AudioManager';
 import { useLearningStore } from '../stores/learning';
+import userSettingsService from '../services/userSettings';
+import eventBus from '../utils/eventBus';
 
 const router = useRouter();
 const route = useRoute();
@@ -251,10 +317,29 @@ const wordInputRefs = ref([]);
 const currentWordIndex = ref(0);
 const wordErrors = ref([]);
 
-// 处理学习模式切换
-const handleModeChange = async (newMode) => {
+// 设置相关
+const showSettingsDialog = ref(false);
+const settingsLoading = ref(false);
+const settings = reactive({
+  shortcuts: {}
+});
+const editingShortcut = ref(null);
+const pressedKeys = ref([]);
+
+// 处理显示模式切换（小白/进阶）
+const handleDisplayModeChange = async (newDisplayMode) => {
   try {
-    await learningStore.switchMode(newMode);
+    await learningStore.switchDisplayMode(newDisplayMode);
+    ElMessage.success(`已切换到${newDisplayMode === 'beginner' ? '小白模式' : '进阶模式'}`);
+  } catch (error) {
+    ElMessage.error('切换显示模式失败: ' + error.message);
+  }
+};
+
+// 处理顺序模式切换
+const handleSequenceModeChange = async (newSequenceMode) => {
+  try {
+    await learningStore.switchSequenceMode(newSequenceMode);
     
     // 获取新模式下的当前单词
     const storeCurrentWord = learningStore.currentWord;
@@ -277,6 +362,7 @@ const handleModeChange = async (newMode) => {
     ElMessage.error('切换学习模式失败: ' + error.message);
   }
 };
+
 
 // 获取下一个单词（基于学习模式）
 const getNextWordFromStore = async () => {
@@ -328,7 +414,14 @@ const showEnglish = computed(() => {
 
   // 小白模式下，根据掌握状态决定
   if (learningStore.isBeginnerMode) {
-    return learningStore.shouldShowEnglishForCurrentWord;
+    // 使用当前页面实际显示的单词ID来判断，而不是store的currentWord
+    // 这样可以确保每个单词独立判断，不会影响其他单词
+    const wordId = currentWord.value?.id;
+    if (!wordId) {
+      return false;
+    }
+    // 如果当前单词已掌握，则隐藏英文
+    return !learningStore.masteredWords.includes(wordId);
   }
 
   // 其他模式下，不显示英文（需要听写）
@@ -339,6 +432,12 @@ const showEnglish = computed(() => {
 onMounted(async () => {
   // 初始化学习状态管理
   learningStore.initialize();
+
+  // 加载用户设置
+  await loadUserSettings();
+
+  // 添加全局键盘监听
+  window.addEventListener('keydown', handleGlobalKeydown);
 
   await loadWords();
   if (words.value.length > 0) {
@@ -366,6 +465,9 @@ onMounted(async () => {
 onUnmounted(() => {
   AudioManager.stop();
   // 移除键盘监听
+  window.removeEventListener('keydown', handleGlobalKeydown);
+  // 移除事件监听
+  eventBus.off('openSettings', openSettings);
   if (window.visualViewport && window._viewportHandler) {
     window.visualViewport.removeEventListener('resize', window._viewportHandler);
   }
@@ -526,6 +628,9 @@ const handleMultiWordSubmit = async () => {
 
     if (allCorrect) {
       // 所有单词都正确
+      // 先保存当前单词 ID，避免在 setTimeout 回调中获取时已经变化
+      const currentWordId = currentWord.value.id;
+      
       feedback.value = {
         show: true,
         type: 'correct',
@@ -537,13 +642,19 @@ const handleMultiWordSubmit = async () => {
       setTimeout(async () => {
         feedback.value.show = false;
         
-        // 提交答案到学习状态管理
-        await learningStore.submitAnswer(currentWord.value.id, true);
+        // 提交答案到学习状态管理（内部会调用 loadNextWord）
+        await learningStore.submitAnswer(currentWordId, true);
         
-        // 获取下一个单词（基于学习模式）
-        const hasNext = await getNextWordFromStore();
+        // 检查是否有下一个单词（submitAnswer 内部已更新 currentWord）
+        const nextWord = learningStore.currentWord;
         
-        if (hasNext) {
+        if (nextWord) {
+          // 找到对应的单词索引
+          const wordIndex = words.value.findIndex(w => w.id === nextWord.id);
+          if (wordIndex !== -1) {
+            currentIndex.value = wordIndex;
+          }
+          
           // 停止当前播放的音频
           AudioManager.stop();
           isPlaying.value = false;
@@ -663,6 +774,9 @@ const handleSubmit = async () => {
 
     if (response.correct) {
       // 答案正确
+      // 先保存当前单词 ID，避免在 setTimeout 回调中获取时已经变化
+      const currentWordId = currentWord.value.id;
+      
       feedback.value = {
         show: true,
         type: 'correct',
@@ -674,13 +788,19 @@ const handleSubmit = async () => {
       setTimeout(async () => {
         feedback.value.show = false;
         
-        // 提交答案到学习状态管理
-        await learningStore.submitAnswer(currentWord.value.id, true);
+        // 提交答案到学习状态管理（内部会调用 loadNextWord）
+        await learningStore.submitAnswer(currentWordId, true);
         
-        // 获取下一个单词（基于学习模式）
-        const hasNext = await getNextWordFromStore();
+        // 检查是否有下一个单词（submitAnswer 内部已更新 currentWord）
+        const nextWord = learningStore.currentWord;
         
-        if (hasNext) {
+        if (nextWord) {
+          // 找到对应的单词索引
+          const wordIndex = words.value.findIndex(w => w.id === nextWord.id);
+          if (wordIndex !== -1) {
+            currentIndex.value = wordIndex;
+          }
+          
           // 停止当前播放的音频
           AudioManager.stop();
           isPlaying.value = false;
@@ -783,54 +903,57 @@ const handleReset = async () => {
   await playAudio(2);
 };
 
-// 标记当前单词为已掌握
+// 标记当前单词为已掌握（支持切换）
 const handleMarkAsMastered = async () => {
   try {
-    if (!currentWord.value.id) {
+    const wordId = currentWord.value?.id;
+    if (!wordId) {
       ElMessage.warning('当前没有单词');
       return;
     }
 
-    const isMastered = learningStore.isCurrentWordMastered;
+    // 检查当前页面显示的单词是否已掌握（而不是 store 的 currentWord）
+    const isMastered = learningStore.masteredWords.includes(wordId);
 
+    let result;
     if (isMastered) {
-      // 已掌握，提示用户
-      ElMessage.info('该单词已经掌握');
-      return;
+      // 已掌握，取消掌握
+      result = await learningStore.unmarkAsMastered(wordId);
+      if (result) {
+        ElMessage.success('已取消掌握，英文已显示');
+      }
+    } else {
+      // 未掌握，标记为掌握
+      result = await learningStore.markAsMastered(wordId);
+      if (result.success) {
+        ElMessage.success('已标记为掌握，英文已隐藏');
+      }
     }
 
-    // 标记为已掌握
-    const result = await learningStore.markAsMastered(currentWord.value.id);
+    // 重置输入框和反馈
+    userAnswer.value = '';
+    wordInputs.value = wordParts.value.map(() => '');
+    wordErrors.value = [];
+    feedback.value.show = false;
 
-    if (result.success) {
-      if (result.isNew) {
-        ElMessage.success('已标记为掌握，英文已隐藏');
-      } else {
-        ElMessage.info('该单词已经是掌握状态');
-      }
+    await nextTick();
 
-      // 重置输入框和反馈
-      userAnswer.value = '';
-      wordInputs.value = wordParts.value.map(() => '');
-      wordErrors.value = [];
-      feedback.value.show = false;
-
-      // 小白模式下，标记为掌握后立即隐藏英文
-      // showEnglish computed属性会自动响应store状态变化
-      // 但我们需要确保输入框可以正常使用
-      await nextTick();
-
-      // 聚焦输入框
-      if (wordInputRefs.value[0]) {
-        wordInputRefs.value[0].focus();
-      } else if (answerInputRef.value) {
-        answerInputRef.value.focus();
-      }
+    // 聚焦输入框
+    if (wordInputRefs.value[0]) {
+      wordInputRefs.value[0].focus();
+    } else if (answerInputRef.value) {
+      answerInputRef.value.focus();
     }
   } catch (error) {
-    ElMessage.error('标记失败：' + error.message);
+    ElMessage.error('操作失败：' + error.message);
   }
 };
+
+// 当前页面显示的单词是否已掌握（用于按钮文字显示）
+const isCurrentPageWordMastered = computed(() => {
+  const wordId = currentWord.value?.id;
+  return wordId ? learningStore.masteredWords.includes(wordId) : false;
+});
 
 // 返回课程列表
 const goBackToLessons = () => {
@@ -843,13 +966,29 @@ const handleRestart = async () => {
   currentIndex.value = 0;
   showAnswer.value = false;
   feedback.value.show = false;
+  
+  // 重新初始化 learningStore 的策略，确保能正确获取下一个单词
+  if (learningStore.strategy && words.value.length > 0) {
+    learningStore.strategy.initialize(words.value);
+    learningStore.progress = {
+      ...learningStore.progress,
+      currentIndex: 0,
+      learnedCount: 0,
+      loopCount: 0
+    };
+    learningStore.status = 'active';
+    
+    // 重新加载第一个单词
+    await learningStore.loadNextWord();
+  }
+  
   initWordInputs();
   await playAudio(2);
 };
 
-// 监听模式切换，重置相关状态
-watch(() => learningStore.mode, async () => {
-  // 切换模式时重置showAnswer，让computed属性重新计算
+// 监听顺序模式切换，重置相关状态
+watch(() => learningStore.sequenceMode, async () => {
+  // 切换顺序模式时重置showAnswer，让computed属性重新计算
   showAnswer.value = false;
   feedback.value.show = false;
 
@@ -861,6 +1000,213 @@ watch(() => learningStore.mode, async () => {
     answerInputRef.value.focus();
   }
 });
+
+// ==================== 设置相关方法 ====================
+
+// 加载用户设置
+const loadUserSettings = async () => {
+  try {
+    const loadedSettings = await userSettingsService.syncFromServer();
+    Object.assign(settings, loadedSettings);
+    console.log('User settings loaded:', settings);
+  } catch (error) {
+    console.error('Failed to load user settings:', error);
+  }
+};
+
+// 全局键盘监听
+const handleGlobalKeydown = (event) => {
+  // 如果正在编辑快捷键，不处理
+  if (editingShortcut.value) {
+    return;
+  }
+
+  // 如果焦点在输入框，不处理快捷键
+  const activeElement = document.activeElement;
+  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+    return;
+  }
+
+  // 如果正在加载或显示完成对话框，不处理
+  if (loading.value || showCompleteDialog.value || showSettingsDialog.value) {
+    return;
+  }
+
+  // 获取当前按下的键
+  const pressedKey = [];
+  if (event.altKey) pressedKey.push('Alt');
+  if (event.ctrlKey) pressedKey.push('Ctrl');
+  if (event.shiftKey) pressedKey.push('Shift');
+  if (event.metaKey) pressedKey.push('Meta');
+
+  // 添加主键（排除修饰键）
+  const mainKey = event.key;
+  if (!['Alt', 'Control', 'Shift', 'Meta'].includes(mainKey)) {
+    // 特殊键名映射
+    const keyMap = {
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      ' ': 'Space',
+      'Enter': 'Enter',
+      'Escape': 'Esc'
+    };
+    pressedKey.push(keyMap[mainKey] || mainKey.toUpperCase());
+  }
+
+  // 调试信息
+  console.log('按键检测:', pressedKey);
+
+  // 检查是否匹配快捷键
+  const shortcuts = settings.shortcuts;
+  for (const [action, config] of Object.entries(shortcuts)) {
+    if (config.keys && arraysEqual(config.keys, pressedKey)) {
+      console.log('匹配快捷键:', action, config.keys);
+      event.preventDefault();
+      executeShortcutAction(action);
+      break;
+    }
+  }
+};
+
+// 比较数组是否相等
+const arraysEqual = (a, b) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+// 执行快捷键动作
+const executeShortcutAction = (action) => {
+  switch (action) {
+    case 'previous':
+      handlePrevious();
+      break;
+    case 'mastered':
+      if (learningStore.isBeginnerMode) {
+        handleMarkAsMastered();
+      }
+      break;
+    case 'play':
+      handlePlayAudio();
+      break;
+    case 'next':
+      handleNext();
+      break;
+    case 'showAnswer':
+      handleShowAnswer();
+      break;
+    case 'restart':
+      handleReset();
+      break;
+  }
+};
+
+// 打开设置对话框
+const openSettings = () => {
+  showSettingsDialog.value = true;
+  editingShortcut.value = null;
+  pressedKeys.value = [];
+};
+
+// 监听全局打开设置事件
+eventBus.on('openSettings', openSettings);
+
+// 关闭设置对话框
+const closeSettings = () => {
+  showSettingsDialog.value = false;
+  editingShortcut.value = null;
+  pressedKeys.value = [];
+};
+
+// 开始编辑快捷键
+const startEditShortcut = (action) => {
+  editingShortcut.value = action;
+  pressedKeys.value = [];
+};
+
+// 取消编辑快捷键
+const cancelEditShortcut = () => {
+  editingShortcut.value = null;
+  pressedKeys.value = [];
+};
+
+// 重置为默认快捷键
+const resetToDefaultShortcuts = () => {
+  settings.shortcuts = { ...userSettingsService.constructor.DEFAULT_SHORTCUTS };
+  ElMessage.success('已重置为默认快捷键');
+};
+
+// 保存设置
+const saveSettings = async () => {
+  settingsLoading.value = true;
+  try {
+    // 保存到本地
+    userSettingsService.saveToLocal(settings);
+    
+    // 同步到服务器
+    await userSettingsService.syncToServer(settings);
+    
+    showSettingsDialog.value = false;
+    ElMessage.success('设置已保存');
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+    ElMessage.warning('设置已保存到本地，但同步到服务器失败');
+  } finally {
+    settingsLoading.value = false;
+  }
+};
+
+// 快捷键输入监听
+const handleShortcutKeydown = (event) => {
+  if (!editingShortcut.value) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  // 收集按下的键
+  const keys = [];
+  if (event.altKey) keys.push('Alt');
+  if (event.ctrlKey) keys.push('Ctrl');
+  if (event.shiftKey) keys.push('Shift');
+  if (event.metaKey) keys.push('Meta');
+
+  // 添加主键
+  const mainKey = event.key;
+  if (!['Alt', 'Control', 'Shift', 'Meta'].includes(mainKey)) {
+    const keyMap = {
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      ' ': 'Space',
+      'Enter': 'Enter',
+      'Escape': 'Esc'
+    };
+    keys.push(keyMap[mainKey] || mainKey.toUpperCase());
+
+    // 必须是组合键（至少两个键）
+    if (keys.length >= 2) {
+      pressedKeys.value = keys;
+      settings.shortcuts[editingShortcut.value].keys = keys;
+      
+      // 短暂延迟后关闭编辑状态
+      setTimeout(() => {
+        editingShortcut.value = null;
+        pressedKeys.value = [];
+      }, 300);
+    }
+  }
+};
+
+// 格式化快捷键显示
+const formatShortcut = (keys) => {
+  if (!keys || keys.length === 0) return '未设置';
+  return keys.join(' + ');
+};
 </script>
 
 <style scoped>
@@ -995,6 +1341,13 @@ watch(() => learningStore.mode, async () => {
   font-size: 42px;
   color: #303133;
   font-weight: bold;
+  text-align: center;
+}
+
+.english-word .phonetic {
+  margin: 8px 0 0 0;
+  font-size: 18px;
+  color: #909399;
   text-align: center;
 }
 
@@ -1138,6 +1491,88 @@ watch(() => learningStore.mode, async () => {
   color: #909399;
 }
 
+/* 设置对话框 */
+.settings-content {
+  padding: 10px 0;
+}
+
+.settings-section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 8px 0;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: #909399;
+  margin: 0 0 16px 0;
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+.shortcut-label {
+  flex: 1;
+  font-size: 14px;
+  color: #303133;
+}
+
+.shortcut-value {
+  min-width: 140px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #606266;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shortcut-value:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.shortcut-value.editing {
+  border-color: #409eff;
+  background: #ecf5ff;
+  animation: pulse 1s infinite;
+}
+
+.editing-hint {
+  color: #409eff;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.shortcut-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .learning-page {
@@ -1208,6 +1643,10 @@ watch(() => learningStore.mode, async () => {
 
   .english-word h1 {
     font-size: 32px;
+  }
+
+  .english-word .phonetic {
+    font-size: 16px;
   }
 
   .solid-underline-input {
@@ -1317,6 +1756,10 @@ watch(() => learningStore.mode, async () => {
 
   .english-word h1 {
     font-size: 28px;
+  }
+
+  .english-word .phonetic {
+    font-size: 14px;
   }
 
   .solid-underline-input {

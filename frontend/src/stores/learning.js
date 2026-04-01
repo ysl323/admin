@@ -5,7 +5,21 @@ import { LoopStrategy } from '../strategies/LoopStrategy'
 import { RandomLoopStrategy } from '../strategies/RandomLoopStrategy'
 import wordMasteryService from '../services/wordMastery'
 
-// 学习模式枚举
+// 显示模式枚举（英文是否显示）
+export const DisplayMode = {
+  BEGINNER: 'beginner',  // 小白模式：显示英文
+  ADVANCED: 'advanced'   // 进阶模式：隐藏英文
+}
+
+// 顺序模式枚举（学习顺序）
+export const SequenceMode = {
+  SEQUENTIAL: 'sequential',     // 顺序学习
+  RANDOM: 'random',             // 随机学习
+  LOOP: 'loop',                 // 循环学习
+  RANDOM_LOOP: 'random_loop'    // 随机循环
+}
+
+// 兼容旧代码的 LearningMode（已废弃，但保留兼容）
 export const LearningMode = {
   BEGINNER: 'beginner',
   ADVANCED: 'advanced',
@@ -25,7 +39,13 @@ export const SessionStatus = {
 
 export const useLearningStore = defineStore('learning', {
   state: () => ({
-    // 当前学习模式
+    // 显示模式（小白/进阶）
+    displayMode: DisplayMode.BEGINNER,
+    
+    // 顺序模式（顺序/随机/循环/随机循环）
+    sequenceMode: SequenceMode.SEQUENTIAL,
+    
+    // 兼容旧代码的 mode（根据 displayMode 和 sequenceMode 计算）
     mode: LearningMode.BEGINNER,
 
     // 会话信息
@@ -58,7 +78,8 @@ export const useLearningStore = defineStore('learning', {
 
     // 本地存储的学习偏好
     preferences: {
-      lastMode: LearningMode.BEGINNER,
+      lastDisplayMode: DisplayMode.BEGINNER,
+      lastSequenceMode: SequenceMode.SEQUENTIAL,
       autoSave: true,
       showProgress: true
     }
@@ -74,17 +95,19 @@ export const useLearningStore = defineStore('learning', {
       return Math.round((state.progress.learnedCount / state.progress.totalWords) * 100)
     },
     
-    // 当前模式的显示名称
+    // 当前模式的显示名称（组合显示模式和顺序模式）
     currentModeDisplayName: (state) => {
-      const names = {
-        [LearningMode.BEGINNER]: '小白模式',
-        [LearningMode.ADVANCED]: '进阶模式',
-        [LearningMode.SEQUENTIAL]: '顺序学习',
-        [LearningMode.RANDOM]: '随机学习',
-        [LearningMode.LOOP]: '循环学习',
-        [LearningMode.RANDOM_LOOP]: '随机循环'
+      const displayNames = {
+        [DisplayMode.BEGINNER]: '小白',
+        [DisplayMode.ADVANCED]: '进阶'
       }
-      return names[state.mode] || '未知模式'
+      const sequenceNames = {
+        [SequenceMode.SEQUENTIAL]: '顺序',
+        [SequenceMode.RANDOM]: '随机',
+        [SequenceMode.LOOP]: '循环',
+        [SequenceMode.RANDOM_LOOP]: '随机循环'
+      }
+      return `${displayNames[state.displayMode] || '未知'}+${sequenceNames[state.sequenceMode] || '未知'}`
     },
     
     // 是否可以切换模式
@@ -101,21 +124,21 @@ export const useLearningStore = defineStore('learning', {
       return state.currentWord ? state.masteredWords.includes(state.currentWord.id) : false
     },
 
-    // 当前模式是否为小白模式
+    // 当前模式是否为小白模式（显示英文）
     isBeginnerMode: (state) => {
-      return state.mode === LearningMode.BEGINNER
+      return state.displayMode === DisplayMode.BEGINNER
     },
 
-    // 当前模式是否为进阶模式
+    // 当前模式是否为进阶模式（隐藏英文）
     isAdvancedMode: (state) => {
-      return state.mode === LearningMode.ADVANCED
+      return state.displayMode === DisplayMode.ADVANCED
     },
 
     // 当前单词在小白模式下是否应该显示英文
     shouldShowEnglishForCurrentWord: (state) => {
       // 小白模式：未掌握的单词显示英文，已掌握的隐藏
-      // 进阶/其他模式：默认隐藏英文
-      if (!state.isBeginnerMode) {
+      // 进阶模式：默认隐藏英文
+      if (state.displayMode !== DisplayMode.BEGINNER) {
         return false;
       }
       if (!state.currentWord) {
@@ -130,35 +153,96 @@ export const useLearningStore = defineStore('learning', {
     // 初始化状态管理
     initialize() {
       this.loadPreferences()
-      // 不要自动设置模式，让用户显式选择
+      // 应用保存的偏好设置
+      if (this.preferences.lastDisplayMode) {
+        this.displayMode = this.preferences.lastDisplayMode
+      }
+      if (this.preferences.lastSequenceMode) {
+        this.sequenceMode = this.preferences.lastSequenceMode
+      }
     },
 
-    // 创建学习策略实例
-    createStrategy(mode) {
-      switch (mode) {
-        case LearningMode.BEGINNER:
-        case LearningMode.ADVANCED:
-        case LearningMode.SEQUENTIAL:
+    // 创建学习策略实例（根据顺序模式）
+    createStrategy(sequenceMode) {
+      switch (sequenceMode) {
+        case SequenceMode.SEQUENTIAL:
           return new SequentialStrategy()
-        case LearningMode.RANDOM:
+        case SequenceMode.RANDOM:
           return new RandomStrategy()
-        case LearningMode.LOOP:
+        case SequenceMode.LOOP:
           return new LoopStrategy()
-        case LearningMode.RANDOM_LOOP:
+        case SequenceMode.RANDOM_LOOP:
           return new RandomLoopStrategy()
         default:
-          throw new Error(`Unknown learning mode: ${mode}`)
+          throw new Error(`Unknown sequence mode: ${sequenceMode}`)
+      }
+    },
+
+    // 切换显示模式（小白/进阶）
+    async switchDisplayMode(newDisplayMode) {
+      if (newDisplayMode === this.displayMode) {
+        return // 相同模式，无需切换
+      }
+      
+      this.displayMode = newDisplayMode
+      this.preferences.lastDisplayMode = newDisplayMode
+      this.savePreferences()
+      
+      console.log(`Display mode switched to: ${newDisplayMode}`)
+    },
+
+    // 切换顺序模式
+    async switchSequenceMode(newSequenceMode) {
+      try {
+        if (newSequenceMode === this.sequenceMode) {
+          return // 相同模式，无需切换
+        }
+        
+        this.isLoading = true
+        
+        const oldMode = this.sequenceMode
+        this.sequenceMode = newSequenceMode
+        
+        // 如果有活跃会话，重新初始化策略
+        if (this.hasActiveSession && this.words.length > 0) {
+          this.strategy = this.createStrategy(newSequenceMode)
+          this.strategy.initialize(this.words)
+          
+          // 重置进度
+          this.progress = {
+            ...this.progress,
+            currentIndex: 0,
+            loopCount: 0
+          }
+          
+          // 加载第一个单词
+          await this.loadNextWord()
+        }
+        
+        // 保存偏好设置
+        this.preferences.lastSequenceMode = newSequenceMode
+        this.savePreferences()
+        
+        console.log(`Sequence mode switched from ${oldMode} to ${newSequenceMode}`)
+        
+      } catch (error) {
+        this.error = error.message
+        console.error('Failed to switch sequence mode:', error)
+        throw error
+      } finally {
+        this.isLoading = false
       }
     },
 
     // 开始学习会话
-    async startSession(lessonId, words, mode = null) {
+    async startSession(lessonId, words, options = null) {
       try {
         this.isLoading = true
         this.error = null
 
         // 使用指定模式或当前模式
-        const sessionMode = mode || this.mode
+        const sessionDisplayMode = options?.displayMode || this.displayMode
+        const sessionSequenceMode = options?.sequenceMode || this.sequenceMode
 
         // 验证输入
         if (!lessonId || !words || words.length === 0) {
@@ -168,14 +252,15 @@ export const useLearningStore = defineStore('learning', {
         // 创建会话ID
         this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         this.lessonId = lessonId
-        this.mode = sessionMode
+        this.displayMode = sessionDisplayMode
+        this.sequenceMode = sessionSequenceMode
         this.words = [...words]
 
         // 加载单词掌握状态
         await this.loadMasteryData(lessonId)
 
-        // 创建并初始化策略
-        this.strategy = this.createStrategy(sessionMode)
+        // 创建并初始化策略（根据顺序模式）
+        this.strategy = this.createStrategy(sessionSequenceMode)
         this.strategy.initialize(words)
 
         // 初始化进度
@@ -194,10 +279,11 @@ export const useLearningStore = defineStore('learning', {
         await this.loadNextWord()
 
         // 保存偏好设置
-        this.preferences.lastMode = sessionMode
+        this.preferences.lastDisplayMode = sessionDisplayMode
+        this.preferences.lastSequenceMode = sessionSequenceMode
         this.savePreferences()
 
-        console.log(`Learning session started: ${this.sessionId}, mode: ${sessionMode}, words: ${words.length}`)
+        console.log(`Learning session started: ${this.sessionId}, display: ${sessionDisplayMode}, sequence: ${sessionSequenceMode}, words: ${words.length}`)
 
       } catch (error) {
         this.error = error.message
@@ -290,56 +376,6 @@ export const useLearningStore = defineStore('learning', {
       }
     },
 
-    // 切换学习模式
-    async switchMode(newMode) {
-      try {
-        if (newMode === this.mode) {
-          return // 相同模式，无需切换
-        }
-        
-        this.isLoading = true
-        
-        // 保存当前会话状态
-        if (this.hasActiveSession) {
-          this.saveSessionState()
-        }
-        
-        // 切换模式
-        const oldMode = this.mode
-        this.mode = newMode
-        
-        // 如果有活跃会话，重新初始化策略
-        if (this.hasActiveSession && this.words.length > 0) {
-          this.strategy = this.createStrategy(newMode)
-          this.strategy.initialize(this.words)
-          
-          // 重置进度（保留已学习统计）
-          const oldLearnedCount = this.progress.learnedCount
-          this.progress = {
-            ...this.progress,
-            currentIndex: 0,
-            loopCount: 0
-          }
-          
-          // 加载第一个单词
-          await this.loadNextWord()
-        }
-        
-        // 保存偏好设置
-        this.preferences.lastMode = newMode
-        this.savePreferences()
-        
-        console.log(`Switched learning mode from ${oldMode} to ${newMode}`)
-        
-      } catch (error) {
-        this.error = error.message
-        console.error('Failed to switch mode:', error)
-        throw error
-      } finally {
-        this.isLoading = false
-      }
-    },
-
     // 暂停会话
     pauseSession() {
       if (this.status === SessionStatus.ACTIVE) {
@@ -391,13 +427,14 @@ export const useLearningStore = defineStore('learning', {
         const sessionData = {
           sessionId: this.sessionId,
           lessonId: this.lessonId,
-          mode: this.mode,
+          displayMode: this.displayMode,
+          sequenceMode: this.sequenceMode,
           progress: this.progress,
           status: this.status,
           timestamp: new Date().toISOString()
         }
         
-        const key = `learning_session_${this.lessonId}_${this.mode}`
+        const key = `learning_session_${this.lessonId}_${this.displayMode}_${this.sequenceMode}`
         localStorage.setItem(key, JSON.stringify(sessionData))
         
         console.log('Session state saved to localStorage')
@@ -407,9 +444,9 @@ export const useLearningStore = defineStore('learning', {
     },
 
     // 从本地存储恢复会话状态
-    restoreSessionState(lessonId, mode) {
+    restoreSessionState(lessonId, displayMode, sequenceMode) {
       try {
-        const key = `learning_session_${lessonId}_${mode}`
+        const key = `learning_session_${lessonId}_${displayMode}_${sequenceMode}`
         const savedData = localStorage.getItem(key)
         
         if (savedData) {
@@ -418,7 +455,8 @@ export const useLearningStore = defineStore('learning', {
           // 恢复基本信息
           this.sessionId = sessionData.sessionId
           this.lessonId = sessionData.lessonId
-          this.mode = sessionData.mode
+          this.displayMode = sessionData.displayMode
+          this.sequenceMode = sessionData.sequenceMode
           this.progress = {
             ...sessionData.progress,
             sessionStartTime: new Date(sessionData.progress.sessionStartTime)

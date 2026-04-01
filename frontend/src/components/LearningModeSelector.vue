@@ -1,45 +1,56 @@
 <template>
   <div :class="['learning-mode-selector', { 'compact': compact }]">
     <h3 v-if="!compact" class="selector-title">选择学习模式</h3>
-    <div :class="['mode-buttons', { 'compact-buttons': compact }]">
-      <button
-        v-for="mode in availableModes"
-        :key="mode.value"
-        :data-mode="mode.value"
-        :aria-label="mode.name + ': ' + mode.description"
-        :aria-pressed="currentMode === mode.value"
-        :class="[
-          'mode-button',
-          { 'active': currentMode === mode.value },
-          { 'disabled': disabled },
-          { 'compact-button': compact }
-        ]"
-        :disabled="disabled"
-        @click="handleModeChange(mode.value)"
-      >
-        <div v-if="!compact" class="mode-icon">
-          <i :class="mode.icon"></i>
-        </div>
-        <div class="mode-info">
-          <div class="mode-name">{{ mode.name }}</div>
-          <div v-if="!compact" class="mode-description">{{ mode.description }}</div>
-        </div>
-      </button>
+    <div :class="['mode-selectors', { 'compact-selectors': compact }]">
+      <!-- 显示模式选择器（小白/进阶） -->
+      <div class="selector-group">
+        <label v-if="!compact" class="selector-label">英文显示</label>
+        <select
+          :class="['mode-select', { 'compact-select': compact }]"
+          :value="currentDisplayMode"
+          :disabled="disabled"
+          @change="handleDisplayModeChange($event.target.value)"
+        >
+          <option v-for="mode in displayModes" :key="mode.value" :value="mode.value">
+            {{ mode.name }}
+          </option>
+        </select>
+      </div>
+      
+      <!-- 顺序模式选择器 -->
+      <div class="selector-group">
+        <label v-if="!compact" class="selector-label">学习顺序</label>
+        <select
+          :class="['mode-select', { 'compact-select': compact }]"
+          :value="currentSequenceMode"
+          :disabled="disabled"
+          @change="handleSequenceModeChange($event.target.value)"
+        >
+          <option v-for="mode in sequenceModes" :key="mode.value" :value="mode.value">
+            {{ mode.name }}
+          </option>
+        </select>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { LearningMode } from '../stores/learning.js'
+import { DisplayMode, SequenceMode } from '../stores/learning.js'
 
 export default {
   name: 'LearningModeSelector',
   
   props: {
-    currentMode: {
+    currentDisplayMode: {
       type: String,
-      default: LearningMode.BEGINNER,
-      validator: (value) => Object.values(LearningMode).includes(value)
+      default: DisplayMode.BEGINNER,
+      validator: (value) => Object.values(DisplayMode).includes(value)
+    },
+    currentSequenceMode: {
+      type: String,
+      default: SequenceMode.SEQUENTIAL,
+      validator: (value) => Object.values(SequenceMode).includes(value)
     },
     disabled: {
       type: Boolean,
@@ -51,63 +62,36 @@ export default {
     }
   },
 
-  emits: ['mode-change'],
+  emits: ['display-mode-change', 'sequence-mode-change'],
 
   data() {
     return {
-      availableModes: [
-        {
-          value: LearningMode.BEGINNER,
-          name: '小白模式',
-          description: '初学者模式，显示英文辅助学习',
-          icon: 'el-icon-data-analysis'
-        },
-        {
-          value: LearningMode.ADVANCED,
-          name: '进阶模式',
-          description: '隐藏英文的顺序学习，适合听写练习',
-          icon: 'el-icon-s-custom'
-        },
-        {
-          value: LearningMode.SEQUENTIAL,
-          name: '顺序学习',
-          description: '按顺序逐个学习单词',
-          icon: 'el-icon-sort'
-        },
-        {
-          value: LearningMode.RANDOM,
-          name: '随机学习',
-          description: '随机选择单词学习',
-          icon: 'el-icon-refresh'
-        },
-        {
-          value: LearningMode.LOOP,
-          name: '循环学习',
-          description: '循环重复所有单词',
-          icon: 'el-icon-refresh-right'
-        },
-        {
-          value: LearningMode.RANDOM_LOOP,
-          name: '随机循环',
-          description: '随机顺序循环学习',
-          icon: 'el-icon-refresh-left'
-        }
+      displayModes: [
+        { value: DisplayMode.BEGINNER, name: '小白模式', description: '显示英文辅助学习' },
+        { value: DisplayMode.ADVANCED, name: '进阶模式', description: '隐藏英文，听写练习' }
+      ],
+      sequenceModes: [
+        { value: SequenceMode.SEQUENTIAL, name: '顺序学习', description: '按顺序逐个学习' },
+        { value: SequenceMode.RANDOM, name: '随机学习', description: '随机选择学习' },
+        { value: SequenceMode.LOOP, name: '循环学习', description: '循环重复所有单词' },
+        { value: SequenceMode.RANDOM_LOOP, name: '随机循环', description: '随机顺序循环学习' }
       ]
     }
   },
 
   methods: {
-    handleModeChange(mode) {
-      if (this.disabled || mode === this.currentMode) {
+    handleDisplayModeChange(mode) {
+      if (this.disabled || mode === this.currentDisplayMode) {
         return
       }
-      
-      this.$emit('mode-change', mode)
+      this.$emit('display-mode-change', mode)
     },
 
-    getModeDisplayName(mode) {
-      const modeInfo = this.availableModes.find(m => m.value === mode)
-      return modeInfo ? modeInfo.name : '未知模式'
+    handleSequenceModeChange(mode) {
+      if (this.disabled || mode === this.currentSequenceMode) {
+        return
+      }
+      this.$emit('sequence-mode-change', mode)
     }
   }
 }
@@ -129,178 +113,56 @@ export default {
   text-align: center;
 }
 
-.mode-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 8px;
-}
-
-/* 6个按钮时，优先3列布局 */
-@media (min-width: 900px) {
-  .mode-buttons {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 768px) and (max-width: 899px) {
-  .mode-buttons {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 767px) {
-  .mode-buttons {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .mode-button {
-    padding: 10px 8px;
-  }
-
-  .mode-icon {
-    font-size: 18px;
-    margin-right: 6px;
-    min-width: 24px;
-  }
-
-  .mode-name {
-    font-size: 13px;
-  }
-
-  .mode-description {
-    font-size: 11px;
-  }
-
-  /* 紧凑模式下的移动端优化 */
-  .compact-buttons {
-    gap: 2px;
-    height: 36px;
-  }
-
-  .mode-button.compact-button {
-    padding: 3px 6px;
-    min-height: 36px;
-  }
-
-  .mode-button.compact-button .mode-name {
-    font-size: 11px;
-  }
-}
-
-.mode-button {
+.mode-selectors {
   display: flex;
-  align-items: center;
-  padding: 10px 8px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
-}
-
-.mode-button:hover:not(.disabled) {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-/* 小白模式和进阶模式的hover状态保持原有边框色 */
-.mode-button[data-mode="beginner"]:hover:not(.disabled) {
-  border-color: #67c23a;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
-}
-
-.mode-button[data-mode="advanced"]:hover:not(.disabled) {
-  border-color: #e6a23c;
-  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
-}
-
-.mode-button.active[data-mode="beginner"]:hover {
-  border-color: #67c23a;
-}
-
-.mode-button.active[data-mode="advanced"]:hover {
-  border-color: #e6a23c;
-}
-
-.mode-button.active {
-  border-color: #409eff;
-  background: #ecf5ff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
-}
-
-.mode-button.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.mode-icon {
-  margin-right: 6px;
-  font-size: 18px;
-  color: #409eff;
-  min-width: 24px;
-  display: flex;
-  align-items: center;
+  gap: 16px;
   justify-content: center;
 }
 
-/* 小白模式和进阶模式的特殊图标样式 */
-.mode-button[data-mode="beginner"] .mode-icon {
-  color: #67c23a;
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.mode-button[data-mode="advanced"] .mode-icon {
-  color: #e6a23c;
-}
-
-.mode-button.active[data-mode="beginner"] .mode-icon {
-  color: #67c23a;
-}
-
-.mode-button.active[data-mode="advanced"] .mode-icon {
-  color: #e6a23c;
-}
-
-.mode-button.active:not([data-mode="beginner"]):not([data-mode="advanced"]) .mode-name {
-  color: #409eff;
-}
-
-/* 小白模式和进阶模式的激活文字颜色 */
-.mode-button.active[data-mode="beginner"] .mode-name {
-  color: #67c23a;
-}
-
-.mode-button.active[data-mode="advanced"] .mode-name {
-  color: #e6a23c;
-}
-
-.mode-button.active[data-mode="beginner"] {
-  border-color: #67c23a;
-  background: #e8f5e9; /* 绿色系背景 */
-}
-
-.mode-button.active[data-mode="advanced"] {
-  border-color: #e6a23c;
-  background: #fdf6ec;
-}
-
-.mode-info {
-  flex: 1;
-}
-
-.mode-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 3px;
-}
-
-.mode-description {
-  font-size: 12px;
+.selector-label {
+  font-size: 13px;
   color: #666;
-  line-height: 1.3;
+  font-weight: 500;
+}
+
+.mode-select {
+  padding: 10px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.mode-select:hover:not(:disabled) {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+}
+
+.mode-select:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+}
+
+.mode-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 紧凑模式样式 */
@@ -311,98 +173,48 @@ export default {
   margin-bottom: 0;
 }
 
-.compact-buttons {
+.compact-selectors {
   display: flex;
-  gap: 3px;
-  height: 40px;
+  gap: 8px;
+  height: 36px;
 }
 
-.mode-button.compact-button {
-  padding: 4px 8px;
+.compact-select {
+  padding: 6px 28px 6px 10px;
   border: 1px solid #e1e5e9;
   border-radius: 4px;
-  background: white;
-  min-height: 40px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 13px;
+  min-width: auto;
+  height: 36px;
+  background-position: right 8px center;
 }
 
-.mode-button.compact-button .mode-name {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 0;
-  white-space: nowrap;
-}
-
-.mode-button.compact-button:hover:not(.disabled) {
+.compact-select:hover:not(:disabled) {
   border-color: #409eff;
   box-shadow: 0 1px 4px rgba(64, 158, 255, 0.2);
-  transform: none;
 }
 
-.mode-button.compact-button.active {
-  border-color: #409eff;
-  background: #ecf5ff;
-  box-shadow: 0 1px 4px rgba(64, 158, 255, 0.3);
-}
-
-.mode-button.compact-button.active .mode-name {
-  color: #409eff;
-}
-
-/* 紧凑模式下小白和进阶模式的特殊样式 */
-.mode-button.compact-button[data-mode="beginner"] {
-  border-color: #b3e19d;
-}
-
-.mode-button.compact-button[data-mode="advanced"] {
-  border-color: #f5dab1;
-}
-
-.mode-button.compact-button.active[data-mode="beginner"] {
-  border-color: #67c23a;
-  background: #e8f5e9;
-}
-
-.mode-button.compact-button.active[data-mode="advanced"] {
-  border-color: #e6a23c;
-  background: #fdf6ec;
-}
-
-.mode-button.compact-button.active[data-mode="beginner"] .mode-name {
-  color: #67c23a;
-}
-
-.mode-button.compact-button.active[data-mode="advanced"] .mode-name {
-  color: #e6a23c;
-}
-
-/* 无障碍支持 */
-.mode-button:focus {
-  outline: 2px solid #409eff;
-  outline-offset: 2px;
-}
-
-.mode-button:focus:not(.active) {
-  border-color: #409eff;
-}
-
-/* 动画效果 */
-@keyframes modeSelect {
-  0% {
-    transform: scale(1);
+/* 响应式 */
+@media (max-width: 767px) {
+  .mode-selectors {
+    flex-direction: column;
+    gap: 12px;
   }
-  50% {
-    transform: scale(0.98);
+  
+  .mode-select {
+    width: 100%;
+    min-width: auto;
   }
-  100% {
-    transform: scale(1);
+  
+  .compact-selectors {
+    flex-direction: row;
+    gap: 6px;
   }
-}
-
-.mode-button.active {
-  animation: modeSelect 0.2s ease-out;
+  
+  .compact-select {
+    flex: 1;
+    font-size: 12px;
+    padding: 6px 24px 6px 8px;
+  }
 }
 </style>
