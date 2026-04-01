@@ -711,57 +711,103 @@ const handleMultiWordSubmit = async () => {
   }
 };
 
-// 播放反馈音效
+// 音效缓存（使用 AudioBuffer 缓存）
+const soundBufferCache = {
+  correct: null,
+  wrong: null
+};
+
+// 共享的 AudioContext
+let sharedAudioContext = null;
+
+// 获取或创建 AudioContext
+const getAudioContext = () => {
+  if (!sharedAudioContext) {
+    sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return sharedAudioContext;
+};
+
+// 生成正确音效的 AudioBuffer
+const createCorrectSoundBuffer = (audioContext) => {
+  const sampleRate = audioContext.sampleRate;
+  const duration = 0.35; // 秒
+  const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+  const data = buffer.getChannelData(0);
+  
+  // 风铃和弦音：C5, E5, G5, C6
+  const frequencies = [523.25, 659.25, 783.99, 1046.50];
+  const delays = [0, 0.05, 0.1, 0.15];
+  const durations = [0.3, 0.25, 0.2, 0.15];
+  
+  for (let i = 0; i < data.length; i++) {
+    const t = i / sampleRate;
+    let value = 0;
+    
+    for (let j = 0; j < frequencies.length; j++) {
+      if (t >= delays[j] && t < delays[j] + durations[j]) {
+        const localT = t - delays[j];
+        const envelope = 0.3 * Math.exp(-localT * 8); // 快速衰减
+        value += envelope * Math.sin(2 * Math.PI * frequencies[j] * t);
+      }
+    }
+    
+    data[i] = value;
+  }
+  
+  return buffer;
+};
+
+// 生成错误音效的 AudioBuffer
+const createWrongSoundBuffer = (audioContext) => {
+  const sampleRate = audioContext.sampleRate;
+  const duration = 0.4; // 秒
+  const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+  const data = buffer.getChannelData(0);
+  
+  for (let i = 0; i < data.length; i++) {
+    const t = i / sampleRate;
+    
+    // 低频锯齿波，从150Hz降到100Hz
+    const freq = 150 - (50 * t / duration);
+    
+    // 包络
+    let envelope = 0.2;
+    if (t < 0.15) {
+      envelope = 0.2;
+    } else {
+      envelope = 0.2 - (0.05 * (t - 0.15) / 0.25);
+    }
+    envelope = Math.max(0.01, envelope);
+    
+    // 锯齿波
+    const sawtooth = 2 * ((freq * t) % 1) - 1;
+    data[i] = envelope * sawtooth;
+  }
+  
+  return buffer;
+};
+
+// 播放反馈音效（带缓存）
 const playFeedbackSound = (isCorrect) => {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioContext = getAudioContext();
     
-    if (isCorrect) {
-      // 正确音效：清脆的风铃声（高频正弦波，快速衰减）
-      const playBellTone = (freq, startTime, duration) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(freq, startTime);
-        
-        // 快速衰减，清脆感
-        gainNode.gain.setValueAtTime(0.3, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-        
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
-      };
-      
-      const now = audioContext.currentTime;
-      // 风铃和弦音：C5, E5, G5, C6
-      playBellTone(523.25, now, 0.3);
-      playBellTone(659.25, now + 0.05, 0.25);
-      playBellTone(783.99, now + 0.1, 0.2);
-      playBellTone(1046.50, now + 0.15, 0.15);
-      
-    } else {
-      // 错误音效：沉闷警报声（低频，较长）
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-      oscillator.frequency.linearRampToValueAtTime(100, audioContext.currentTime + 0.3);
-      
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.15);
-      gainNode.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.4);
+    // 获取或创建缓存
+    const cacheKey = isCorrect ? 'correct' : 'wrong';
+    if (!soundBufferCache[cacheKey]) {
+      soundBufferCache[cacheKey] = isCorrect 
+        ? createCorrectSoundBuffer(audioContext)
+        : createWrongSoundBuffer(audioContext);
+      console.log(`[音效缓存] 生成: ${cacheKey}`);
     }
+    
+    // 播放缓存的 AudioBuffer
+    const source = audioContext.createBufferSource();
+    source.buffer = soundBufferCache[cacheKey];
+    source.connect(audioContext.destination);
+    source.start(0);
+    
   } catch (error) {
     console.warn('音效播放失败:', error);
   }
