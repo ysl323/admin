@@ -129,6 +129,44 @@ class LearningService {
   }
 
   /**
+   * 智能标点符号校对
+   * @param {string} userInput - 用户输入
+   * @param {string} correctAnswer - 正确答案
+   * @returns {boolean} 是否正确
+   */
+  checkWithSmartPunctuation(userInput, correctAnswer) {
+    // 去除首尾空格
+    const input = userInput.trim();
+    const answer = correctAnswer.trim();
+
+    // 获取用户输入的最后一个字符
+    const inputLastChar = input.slice(-1);
+    const answerLastChar = answer.slice(-1);
+
+    // 常见标点符号集合
+    const punctuation = /[.!?。，！？,;:;:"'""'']|!|！|\?|？|\.|。|,|，|;|；|:|：|"|"|'|'|'/;
+
+    const inputHasPunctuation = punctuation.test(inputLastChar);
+    const answerHasPunctuation = punctuation.test(answerLastChar);
+
+    // 情况1: 用户输入带标点，正确答案也带标点
+    if (inputHasPunctuation && answerHasPunctuation) {
+      // 比较带标点的完整答案（忽略大小写）
+      return input.toLowerCase() === answer.toLowerCase();
+    }
+
+    // 情况2: 用户输入不带标点，正确答案带标点
+    // 情况3: 用户输入带标点，正确答案不带标点
+    // 情况4: 两者都不带标点
+    // 以上三种情况都只比较不含标点的核心内容
+
+    const inputWithoutPunct = input.replace(punctuation, '').trim();
+    const answerWithoutPunct = answer.replace(punctuation, '').trim();
+
+    return inputWithoutPunct.toLowerCase() === answerWithoutPunct.toLowerCase();
+  }
+
+  /**
    * 计算最长公共前缀（LCP）
    * @param {string} userInput - 用户输入
    * @param {string} correctAnswer - 正确答案
@@ -155,7 +193,7 @@ class LearningService {
   }
 
   /**
-   * 检查答案是否正确
+   * 检查答案是否正确（支持智能标点符号校对）
    * @param {number} wordId - 单词ID
    * @param {string} userAnswer - 用户答案
    * @returns {Promise<Object>} 检查结果
@@ -171,15 +209,14 @@ class LearningService {
         throw new Error('单词不存在');
       }
 
-      // 去除首尾空格并转换为小写进行比较
-      const trimmedAnswer = userAnswer.trim();
+      // 使用智能标点符号校对
       const correctAnswer = word.english.trim();
-      const isCorrect = trimmedAnswer.toLowerCase() === correctAnswer.toLowerCase();
+      const isCorrect = this.checkWithSmartPunctuation(userAnswer, correctAnswer);
 
       // 如果错误，计算最长公共前缀
       let longestCommonPrefix = '';
       if (!isCorrect) {
-        longestCommonPrefix = this.calculateLongestCommonPrefix(trimmedAnswer, correctAnswer);
+        longestCommonPrefix = this.calculateLongestCommonPrefix(userAnswer, correctAnswer);
       }
 
       const result = {
@@ -189,7 +226,7 @@ class LearningService {
         longestCommonPrefix: isCorrect ? '' : longestCommonPrefix
       };
 
-      logger.info(`答案检查: 单词 ${wordId}, 用户答案 "${trimmedAnswer}", 结果: ${isCorrect ? '正确' : '错误'}`);
+      logger.info(`答案检查: 单词 ${wordId}, 用户答案 "${userAnswer.trim()}", 结果: ${isCorrect ? '正确' : '错误'}`);
       return result;
     } catch (error) {
       logger.error(`检查答案失败: 单词 ${wordId}`, error);

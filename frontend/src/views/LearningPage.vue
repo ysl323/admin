@@ -50,6 +50,15 @@
                 :compact="true"
               />
             </div>
+            <div class="compact-review-section" @click.stop @click.prevent>
+              <ReviewLessonSelector
+                v-model="reviewLessonIds"
+                :current-lesson-id="lessonId"
+                :all-lessons="allLessons"
+                :disabled="learningStore.isLoading"
+                @change="handleReviewChange"
+              />
+            </div>
             <div class="compact-progress-section">
               <ProgressDisplay
                 :mode="learningStore.displayMode"
@@ -65,6 +74,12 @@
         <!-- 单词学习卡片 -->
         <el-card class="word-learning-card" shadow="hover">
           <div class="word-learning-content">
+            <!-- 单词类型标签 -->
+            <div v-if="currentWord.isReview" class="word-type-badge review-badge">
+              <el-tag type="warning" size="small" effect="plain">复习</el-tag>
+              <span class="review-lesson">第{{ getReviewLessonNumber(currentWord.lessonId) }}课</span>
+            </div>
+
             <!-- 中文提示 -->
             <div class="chinese-hint">
               <el-icon :size="24"><ChatDotRound /></el-icon>
@@ -73,7 +88,7 @@
 
             <!-- 英文单词（小白模式下：未掌握显示，已掌握隐藏；答对或显示答案后显示） -->
             <div v-if="showEnglish" class="english-word">
-              <h1>{{ currentWord.english }}</h1>
+              <h1 v-html="highlightedAnswer"></h1>
               <p v-if="currentWord.phonetic" class="phonetic">{{ currentWord.phonetic }}</p>
             </div>
 
@@ -287,6 +302,7 @@ import {
 } from '@element-plus/icons-vue';
 import NavBar from '../components/NavBar.vue';
 import LearningModeSelector from '../components/LearningModeSelector.vue';
+import ReviewLessonSelector from '../components/ReviewLessonSelector.vue';
 import ProgressDisplay from '../components/ProgressDisplay.vue';
 import learningService from '../services/learning';
 import ttsService from '../services/tts';
@@ -294,6 +310,7 @@ import AudioManager from '../utils/AudioManager';
 import { useLearningStore } from '../stores/learning';
 import userSettingsService from '../services/userSettings';
 import eventBus from '../utils/eventBus';
+import vowelHighlighter from '../utils/vowelHighlighter';
 
 const router = useRouter();
 const route = useRoute();
@@ -309,6 +326,10 @@ const isChecking = ref(false);
 const isPlaying = ref(false);
 const showCompleteDialog = ref(false);
 const answerInputRef = ref(null);
+
+// 复习相关
+const reviewLessonIds = ref([]);
+const allLessons = ref([]);
 
 // 多单词输入相关
 const wordParts = ref([]);
@@ -405,6 +426,14 @@ const progressPercentage = computed(() => {
   return Math.round(((currentIndex.value + 1) / words.value.length) * 100);
 });
 
+// 带元音高亮的答案（用于显示）
+const highlightedAnswer = computed(() => {
+  if (currentWord.value?.english) {
+    return vowelHighlighter.highlightText(currentWord.value.english);
+  }
+  return '';
+});
+
 // 英文显示逻辑：根据模式、掌握状态和是否显示答案决定
 const showEnglish = computed(() => {
   // 如果手动显示了答案，始终显示
@@ -486,6 +515,11 @@ const loadWords = async () => {
         categoryName: response.lesson?.categoryName || response.categoryName,
         lessonNumber: response.lesson?.lessonNumber || response.lessonNumber
       };
+
+      // 加载当前分类的所有课程，用于复习选择
+      if (lessonInfo.value.categoryId) {
+        await loadAllLessons(lessonInfo.value.categoryId);
+      }
     } else {
       ElMessage.error(response.message || '获取单词列表失败');
     }
@@ -497,6 +531,93 @@ const loadWords = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 加载当前分类的所有课程
+const loadAllLessons = async (categoryId) => {
+  try {
+    const response = await learningService.getLessonsByCategory(categoryId);
+    if (response.success) {
+      allLessons.value = response.lessons || [];
+    }
+  } catch (error) {
+    console.error('Failed to load all lessons:', error);
+  }
+};
+
+// 处理复习课程变化
+const handleReviewChange = async (selectedIds) => {
+  console.log('[LearningPage] handleReviewChange called with:', selectedIds);
+  try {
+    if (selectedIds.length === 0) {
+      console.log('[LearningPage] No review lessons selected, clearing review');
+      // 清除复习，只保留当前课程单词
+      const currentWords = words.value.filter(w => !w.isReview);
+      words.value = currentWords.map(w => ({ ...w, isReview: false }));
+      console.log('[LearningPage] Cleared review words, remaining:', words.value.length);
+      if (words.value.length > 0) {
+        await learningStore.startSession(lessonId.value, words.value);
+        initWordInputs();
+      }
+      return;
+    }
+
+    console.log('[LearningPage] Loading review words for lessons:', selectedIds);
+    // 加载复习课程的单词
+    const reviewWordsPromises = selectedIds.map(async (id) => {
+      const response = await learningService.getWordsByLesson(id);
+      const lesson = allLessons.value.find(l => l.id === id);
+      return {
+        lessonId: id,
+        lessonNumber: lesson?.lessonNumber || '?',
+        words: response.words || [],
+        success: response.success,
+        message: response.message
+      };
+    });
+
+    const responses = await Promise.all(reviewWordsPromises);
+    console.log('[LearningPage] Review words loaded:', responses);
+
+    // 检查哪些课程没有单词
+    const emptyLessons = responses.filter(r => r.words.length === 0 && r.success);
+    if (emptyLessons.length > 0) {
+      const lessonNumbers = emptyLessons.map(l => `第${l.lessonNumber}课`).join('、');
+      ElMessage.warning(`${lessonNumbers} 暂无单词`);
+    }
+
+    // 合并复习单词
+    const reviewWords = responses.flatMap(r =>
+      r.words.map(w => ({ ...w, lessonId: r.lessonId, isReview: true }))
+    );
+    console.log('[LearningPage] Merged review words:', reviewWords.length);
+
+    // 合并到当前单词列表（传入当前单词列表作为参数）
+    const currentWords = words.value.filter(w => !w.isReview); // 获取当前课程单词
+    const mergedWords = learningStore.mergeReviewWords(currentWords, reviewWords);
+    words.value = mergedWords;
+    console.log('[LearningPage] Total words after merge:', words.value?.length || 0);
+
+    // 重启学习会话
+    if (words.value.length > 0) {
+      await learningStore.startSession(lessonId.value, words.value);
+      initWordInputs();
+      await playAudio(2);
+    }
+
+    if (reviewWords.length > 0) {
+      ElMessage.success(`已添加 ${reviewWords.length} 个复习单词`);
+    }
+  } catch (error) {
+    console.error('[LearningPage] 加载复习单词失败:', error);
+    ElMessage.error('加载复习单词失败: ' + error.message);
+  }
+};
+
+// 获取复习课程的课程号
+const getReviewLessonNumber = (lessonId) => {
+  const lesson = allLessons.value.find(l => l.id === lessonId);
+  return lesson ? lesson.lessonNumber : '?';
 };
 
 // 初始化单词输入
@@ -601,22 +722,45 @@ const handleWordComplete = async (index) => {
   }
 };
 
+// 智能标点符号校对（前端版本，用于多单词输入）
+const checkWithSmartPunctuation = (userInput, correctAnswer) => {
+  const input = userInput.trim();
+  const answer = correctAnswer.trim();
+
+  const inputLastChar = input.slice(-1);
+  const answerLastChar = answer.slice(-1);
+
+  const punctuation = /[.!?。，！？,;:;:"'""'']|!|！|\?|？|\.|。|,|，|;|；|:|：|"|"|'|'|'/;
+
+  const inputHasPunctuation = punctuation.test(inputLastChar);
+  const answerHasPunctuation = punctuation.test(answerLastChar);
+
+  if (inputHasPunctuation && answerHasPunctuation) {
+    return input.toLowerCase() === answer.toLowerCase();
+  }
+
+  const inputWithoutPunct = input.replace(punctuation, '').trim();
+  const answerWithoutPunct = answer.replace(punctuation, '').trim();
+
+  return inputWithoutPunct.toLowerCase() === answerWithoutPunct.toLowerCase();
+};
+
 // 提交多单词答案（所有单词输入完成后验证）
 const handleMultiWordSubmit = async () => {
   if (isChecking.value || showAnswer.value) return;
-  
+
   isChecking.value = true;
-  
+
   try {
     // 逐个验证每个单词
     let allCorrect = true;
     const correctWords = [];
-    
+
     for (let i = 0; i < wordParts.value.length; i++) {
-      const userInput = wordInputs.value[i].trim().toLowerCase();
-      const correctWord = wordParts.value[i].toLowerCase();
-      
-      if (userInput === correctWord) {
+      const userInput = wordInputs.value[i];
+      const correctWord = wordParts.value[i];
+
+      if (checkWithSmartPunctuation(userInput, correctWord)) {
         correctWords.push(true);
         wordErrors.value[i] = false;
       } else {
@@ -1411,6 +1555,15 @@ const formatShortcut = (keys) => {
   align-items: center;
 }
 
+.compact-review-section {
+  flex: 1 1 auto;
+  min-width: 150px;
+  max-width: 300px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
 .compact-progress-section {
   flex: 0 0 auto;
   min-width: 0;
@@ -1433,6 +1586,22 @@ const formatShortcut = (keys) => {
   gap: 30px;
   padding: 40px 20px;
   min-height: 350px;
+  position: relative;
+}
+
+.word-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-badge .review-lesson {
+  font-size: 12px;
+  color: #e6a23c;
+  font-weight: 500;
 }
 
 .chinese-hint {
@@ -1457,6 +1626,23 @@ const formatShortcut = (keys) => {
   font-size: 18px;
   color: #909399;
   text-align: center;
+}
+
+/* 元音高亮样式 */
+.english-word h1 u {
+  color: #e63946;
+  text-decoration: underline;
+  text-decoration-color: #e63946;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.english-word h1 u:hover {
+  color: #d62828;
+  text-decoration-color: #d62828;
+  text-decoration-thickness: 3px;
 }
 
 .answer-input {

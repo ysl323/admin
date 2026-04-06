@@ -781,7 +781,7 @@ router.get('/words', async (req, res) => {
  */
 router.post('/words', async (req, res) => {
   try {
-    const { lessonId, english, chinese } = req.body;
+    const { lessonId, english, chinese, phonetic } = req.body;
 
     if (!lessonId || !english || !chinese) {
       return res.status(400).json({
@@ -793,7 +793,8 @@ router.post('/words', async (req, res) => {
     const word = await AdminService.createWord({
       lessonId: parseInt(lessonId),
       english: english.trim(),
-      chinese: chinese.trim()
+      chinese: chinese.trim(),
+      phonetic: phonetic?.trim() || null
     });
 
     res.status(201).json({
@@ -825,7 +826,7 @@ router.post('/words', async (req, res) => {
 router.put('/words/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { lessonId, english, chinese } = req.body;
+    const { lessonId, english, chinese, phonetic } = req.body;
 
     if (isNaN(id)) {
       return res.status(400).json({
@@ -837,7 +838,8 @@ router.put('/words/:id', async (req, res) => {
     const word = await AdminService.updateWord(id, {
       lessonId: lessonId ? parseInt(lessonId) : undefined,
       english: english ? english.trim() : undefined,
-      chinese: chinese ? chinese.trim() : undefined
+      chinese: chinese ? chinese.trim() : undefined,
+      phonetic: phonetic !== undefined ? phonetic.trim() : undefined
     });
 
     res.json({

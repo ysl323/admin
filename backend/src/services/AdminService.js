@@ -290,12 +290,12 @@ class AdminService {
 
   /**
    * 创建单词
-   * @param {Object} data - 单词数据 { lessonId, english, chinese }
+   * @param {Object} data - 单词数据 { lessonId, english, chinese, phonetic }
    * @returns {Promise<Object>} 创建的单词
    */
   async createWord(data) {
     try {
-      const { lessonId, english, chinese } = data;
+      const { lessonId, english, chinese, phonetic } = data;
 
       // 验证课程是否存在
       const lesson = await Lesson.findByPk(lessonId);
@@ -303,7 +303,7 @@ class AdminService {
         throw new Error('课程不存在');
       }
 
-      const word = await Word.create({ lessonId, english, chinese });
+      const word = await Word.create({ lessonId, english, chinese, phonetic: phonetic || null });
       logger.info(`创建单词: ${english} (${chinese})`, { wordId: word.id });
       return word;
     } catch (error) {
@@ -315,7 +315,7 @@ class AdminService {
   /**
    * 更新单词
    * @param {number} id - 单词ID
-   * @param {Object} data - 单词数据 { lessonId, english, chinese }
+   * @param {Object} data - 单词数据 { lessonId, english, chinese, phonetic }
    * @returns {Promise<Object>} 更新后的单词
    */
   async updateWord(id, data) {
@@ -325,7 +325,7 @@ class AdminService {
         throw new Error('单词不存在');
       }
 
-      const { lessonId, english, chinese } = data;
+      const { lessonId, english, chinese, phonetic } = data;
 
       // 如果更新了课程ID，验证课程是否存在
       if (lessonId && lessonId !== word.lessonId) {
@@ -338,6 +338,7 @@ class AdminService {
 
       if (english) word.english = english;
       if (chinese) word.chinese = chinese;
+      if (phonetic !== undefined) word.phonetic = phonetic || null;
 
       await word.save();
       logger.info(`更新单词 ${id}: ${english} (${chinese})`);

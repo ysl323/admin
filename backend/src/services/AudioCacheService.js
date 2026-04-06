@@ -405,10 +405,20 @@ class AudioCacheService {
           }
 
           // 查找对应的音频文件
-          const audioEntry = zipEntries.find(entry => 
-            entry.entryName.includes(meta.cacheKey.substring(0, 8)) && 
-            entry.entryName.endsWith('.mp3')
+          // 先尝试用原始 fileName 匹配，再用 cacheKey 前8位匹配
+          let audioEntry = zipEntries.find(entry => 
+            entry.entryName === meta.fileName || 
+            entry.entryName.endsWith('/' + meta.fileName)
           );
+
+          // 如果找不到，尝试用 cacheKey 前8位匹配
+          if (!audioEntry) {
+            const cacheKeyPrefix = meta.cacheKey.substring(0, 8);
+            audioEntry = zipEntries.find(entry => {
+              const name = entry.entryName.toLowerCase();
+              return name.includes(cacheKeyPrefix.toLowerCase()) && name.endsWith('.mp3');
+            });
+          }
 
           if (!audioEntry) {
             errors.push({ cacheKey: meta.cacheKey, error: '找不到对应的音频文件' });

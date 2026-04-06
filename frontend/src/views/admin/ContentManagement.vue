@@ -193,6 +193,9 @@
         <el-form-item label="英文" prop="english">
           <el-input v-model="wordForm.english" placeholder="请输入英文单词" />
         </el-form-item>
+        <el-form-item label="音标">
+          <el-input v-model="wordForm.phonetic" placeholder="请输入音标（可选）" />
+        </el-form-item>
         <el-form-item label="中文" prop="chinese">
           <el-input v-model="wordForm.chinese" placeholder="请输入中文翻译" />
         </el-form-item>
@@ -327,7 +330,7 @@ const wordSearch = ref('');
 const wordDialog = ref(false);
 const wordDialogTitle = ref('新增单词');
 const wordFormRef = ref(null);
-const wordForm = ref({ id: null, lessonId: null, english: '', chinese: '' });
+const wordForm = ref({ id: null, lessonId: null, english: '', phonetic: '', chinese: '' });
 const wordRules = {
   lessonId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   english: [{ required: true, message: '请输入英文单词', trigger: 'blur' }],
@@ -579,6 +582,7 @@ const showAddWordDialog = () => {
     id: null, 
     lessonId: selectedLesson.value?.id || null, 
     english: '', 
+    phonetic: '', 
     chinese: '' 
   };
   wordDialogTitle.value = '新增单词';

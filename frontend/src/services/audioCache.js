@@ -47,13 +47,6 @@ const audioCacheService = {
   },
 
   /**
-   * 导出所有缓存
-   */
-  async exportCaches() {
-    return await api.get('/audio-cache/export');
-  },
-
-  /**
    * 导出所有音频文件（ZIP格式）
    */
   async exportAudioFiles() {
@@ -69,13 +62,6 @@ const audioCacheService = {
     }
 
     return await response.blob();
-  },
-
-  /**
-   * 导入缓存
-   */
-  async importCaches(data) {
-    return await api.post('/audio-cache/import', data);
   },
 
   /**

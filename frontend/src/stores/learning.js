@@ -52,12 +52,17 @@ export const useLearningStore = defineStore('learning', {
     session: null,
     sessionId: null,
     lessonId: null,
+    categoryId: null,
     status: SessionStatus.IDLE,
 
     // 当前单词和策略
     currentWord: null,
     strategy: null,
     words: [],
+
+    // 复习相关
+    reviewLessonIds: [], // 复习课程ID列表
+    allLessons: [], // 当前分类下所有课程
 
     // 学习进度
     progress: {
@@ -146,6 +151,24 @@ export const useLearningStore = defineStore('learning', {
       }
       // 小白模式下，已掌握的单词隐藏英文
       return !state.masteredWords.includes(state.currentWord.id);
+    },
+
+    // 当前单词是否为复习单词
+    isReviewWord: (state) => {
+      return state.currentWord && state.currentWord.lessonId !== state.lessonId;
+    },
+
+    // 获取统计信息（区分新单词和复习单词）
+    wordStatistics: (state) => {
+      const newWords = state.words.filter(w => w.lessonId === state.lessonId);
+      const reviewWords = state.words.filter(w => w.lessonId !== state.lessonId);
+      
+      return {
+        total: state.words.length,
+        newCount: newWords.length,
+        reviewCount: reviewWords.length,
+        reviewLessonCount: state.reviewLessonIds.length
+      };
     }
   },
 
@@ -733,6 +756,46 @@ export const useLearningStore = defineStore('learning', {
       }
 
       console.log('Mastery data cleared');
+    },
+
+    // 设置当前分类ID和所有课程列表
+    setCategoryInfo(categoryId, allLessons) {
+      this.categoryId = categoryId;
+      this.allLessons = allLessons || [];
+    },
+
+    // 更新复习课程列表
+    updateReviewLessons(reviewLessonIds) {
+      this.reviewLessonIds = reviewLessonIds || [];
+      console.log(`Review lessons updated: ${this.reviewLessonIds.join(', ')}`);
+    },
+
+    // 合并复习课程的单词到当前单词列表
+    mergeReviewWords(currentWords, reviewWords) {
+      // 为当前课程单词添加标识
+      const currentWordsWithFlag = currentWords.map(word => ({
+        ...word,
+        isReview: false
+      }));
+
+      // 如果没有复习单词，直接返回当前单词
+      if (!reviewWords || reviewWords.length === 0) {
+        console.log('No review words, returning current words');
+        return currentWordsWithFlag;
+      }
+
+      // 为复习单词添加标识
+      const markedReviewWords = reviewWords.map(word => ({
+        ...word,
+        isReview: true
+      }));
+
+      // 合并单词列表：当前课程单词 + 复习单词
+      const mergedWords = [...currentWordsWithFlag, ...markedReviewWords];
+
+      console.log(`Merged ${reviewWords.length} review words, total: ${mergedWords.length}`);
+
+      return mergedWords;
     }
   }
 })

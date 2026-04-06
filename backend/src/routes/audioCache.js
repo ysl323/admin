@@ -197,31 +197,6 @@ router.get('/audio/:id', async (req, res) => {
 });
 
 /**
- * GET /api/audio-cache/export
- * 导出所有缓存记录（JSON格式）
- */
-router.get('/export', async (req, res) => {
-  try {
-    const caches = await AudioCache.findAll({
-      attributes: ['text', 'provider', 'cacheKey', 'filePath', 'fileSize', 'hitCount', 'lastAccessedAt', 'createdAt'],
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.json({
-      success: true,
-      count: caches.length,
-      data: caches
-    });
-  } catch (error) {
-    logger.error('导出缓存失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '导出缓存失败'
-    });
-  }
-});
-
-/**
  * GET /api/audio-cache/export-files
  * 导出所有音频文件（ZIP格式）
  */
@@ -241,53 +216,6 @@ router.get('/export-files', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '导出音频文件失败'
-    });
-  }
-});
-
-/**
- * POST /api/audio-cache/import
- * 导入缓存记录
- */
-router.post('/import', async (req, res) => {
-  try {
-    const caches = req.body;
-
-    if (!Array.isArray(caches)) {
-      return res.status(400).json({
-        success: false,
-        message: '无效的导入数据格式'
-      });
-    }
-
-    let imported = 0;
-
-    for (const cache of caches) {
-      try {
-        // 检查是否已存在
-        const existing = await AudioCache.findOne({
-          where: { cacheKey: cache.cacheKey }
-        });
-
-        if (!existing) {
-          await AudioCache.create(cache);
-          imported++;
-        }
-      } catch (error) {
-        logger.warn(`导入缓存失败: ${cache.text}`, error);
-      }
-    }
-
-    res.json({
-      success: true,
-      message: `成功导入 ${imported} 条缓存记录`,
-      imported
-    });
-  } catch (error) {
-    logger.error('导入缓存失败:', error);
-    res.status(500).json({
-      success: false,
-      message: '导入缓存失败'
     });
   }
 });

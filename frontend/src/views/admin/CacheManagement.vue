@@ -78,24 +78,10 @@
         </el-button>
         <el-button 
           type="success" 
-          @click="handleExport"
-        >
-          <el-icon><Download /></el-icon>
-          导出记录(JSON)
-        </el-button>
-        <el-button 
-          type="success" 
           @click="handleExportFiles"
         >
           <el-icon><Download /></el-icon>
           导出音频文件(ZIP)
-        </el-button>
-        <el-button 
-          type="primary" 
-          @click="handleImport"
-        >
-          <el-icon><Upload /></el-icon>
-          导入记录(JSON)
         </el-button>
         <el-button 
           type="primary" 
@@ -125,13 +111,6 @@
     </div>
 
     <!-- 隐藏的文件输入 -->
-    <input 
-      ref="fileInputRef" 
-      type="file" 
-      accept=".json" 
-      style="display: none" 
-      @change="handleFileSelect"
-    />
     <input 
       ref="zipFileInputRef" 
       type="file" 
@@ -235,7 +214,6 @@ const loading = ref(false);
 const searchText = ref('');
 const selectedIds = ref([]);
 const playingId = ref(null);
-const fileInputRef = ref(null);
 const zipFileInputRef = ref(null);
 
 // 分页
@@ -386,29 +364,6 @@ const handlePageChange = () => {
   loadData();
 };
 
-// 导出缓存
-const handleExport = async () => {
-  try {
-    const response = await audioCacheService.exportCaches();
-    if (response.success) {
-      // 创建下载链接
-      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `audio-cache-export-${new Date().getTime()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      ElMessage.success(`成功导出 ${response.count} 条缓存记录`);
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '导出失败');
-  }
-};
-
 // 导出音频文件
 const handleExportFiles = async () => {
   try {
@@ -434,37 +389,9 @@ const handleExportFiles = async () => {
   }
 };
 
-// 导入缓存
-const handleImport = () => {
-  fileInputRef.value?.click();
-};
-
 // 导入音频文件
 const handleImportFiles = () => {
   zipFileInputRef.value?.click();
-};
-
-// 处理文件选择
-const handleFileSelect = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    
-    const response = await audioCacheService.importCaches(data);
-    if (response.success) {
-      ElMessage.success(`成功导入 ${response.imported} 条缓存记录`);
-      loadData();
-      loadStatistics();
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '导入失败');
-  } finally {
-    // 清空文件输入
-    event.target.value = '';
-  }
 };
 
 // 处理ZIP文件选择
