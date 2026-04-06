@@ -1628,28 +1628,6 @@ const formatShortcut = (keys) => {
   text-align: center;
 }
 
-/* 元音高亮样式 */
-.english-word h1 .vowel-highlight {
-  color: #e63946;
-  text-decoration: underline;
-  text-decoration-color: #e63946;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  display: inline-block;
-  position: relative;
-}
-
-.english-word h1 .vowel-highlight:hover {
-  color: #d62828;
-  text-decoration-color: #d62828;
-  text-decoration-thickness: 3px;
-  background-color: rgba(230, 57, 70, 0.1);
-  border-radius: 3px;
-  padding: 0 2px;
-}
-
 .answer-input {
   display: flex;
   justify-content: center;
@@ -2135,5 +2113,29 @@ const formatShortcut = (keys) => {
       padding-bottom: max(12px, env(safe-area-inset-bottom));
     }
   }
+}
+</style>
+
+<!-- 非scoped样式，用于v-html渲染的元音高亮 -->
+<style>
+.english-word h1 .vowel-highlight {
+  color: #e63946 !important;
+  text-decoration: underline !important;
+  text-decoration-color: #e63946 !important;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-block;
+  position: relative;
+}
+
+.english-word h1 .vowel-highlight:hover {
+  color: #d62828 !important;
+  text-decoration-color: #d62828 !important;
+  text-decoration-thickness: 3px;
+  background-color: rgba(230, 57, 70, 0.1);
+  border-radius: 3px;
+  padding: 0 2px;
 }
 </style>
