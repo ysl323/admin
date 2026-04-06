@@ -37,7 +37,7 @@ function highlightVowels(word) {
     // 1. 尝试匹配三元音
     for (const pattern of VOWEL_PATTERNS.threeVowels) {
       if (matchPattern(word, i, pattern)) {
-        result.push(`<u>${word.substr(i, 3)}</u>`);
+        result.push(`<span class="vowel-highlight">${word.substr(i, 3)}</span>`);
         i += 3;
         matched = true;
         break;
@@ -48,7 +48,7 @@ function highlightVowels(word) {
     if (!matched) {
       for (const pattern of VOWEL_PATTERNS.diphthongs) {
         if (matchPattern(word, i, pattern)) {
-          result.push(`<u>${word.substr(i, 2)}</u>`);
+          result.push(`<span class="vowel-highlight">${word.substr(i, 2)}</span>`);
           i += 2;
           matched = true;
           break;
@@ -60,7 +60,7 @@ function highlightVowels(word) {
     if (!matched) {
       for (const pattern of VOWEL_PATTERNS.rControlled) {
         if (matchPattern(word, i, pattern)) {
-          result.push(`<u>${word.substr(i, 2)}</u>`);
+          result.push(`<span class="vowel-highlight">${word.substr(i, 2)}</span>`);
           i += 2;
           matched = true;
           break;
@@ -72,7 +72,7 @@ function highlightVowels(word) {
     if (!matched) {
       for (const vowel of VOWEL_PATTERNS.singleVowels) {
         if (matchPattern(word, i, vowel)) {
-          result.push(`<u>${word[i]}</u>`);
+          result.push(`<span class="vowel-highlight">${word[i]}</span>`);
           i += 1;
           matched = true;
           break;

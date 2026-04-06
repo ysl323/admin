@@ -1629,7 +1629,7 @@ const formatShortcut = (keys) => {
 }
 
 /* 元音高亮样式 */
-.english-word h1 u {
+.english-word h1 .vowel-highlight {
   color: #e63946;
   text-decoration: underline;
   text-decoration-color: #e63946;
@@ -1637,12 +1637,17 @@ const formatShortcut = (keys) => {
   text-underline-offset: 3px;
   font-weight: 600;
   transition: all 0.2s ease;
+  display: inline-block;
+  position: relative;
 }
 
-.english-word h1 u:hover {
+.english-word h1 .vowel-highlight:hover {
   color: #d62828;
   text-decoration-color: #d62828;
   text-decoration-thickness: 3px;
+  background-color: rgba(230, 57, 70, 0.1);
+  border-radius: 3px;
+  padding: 0 2px;
 }
 
 .answer-input {
