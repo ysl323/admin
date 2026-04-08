@@ -438,26 +438,21 @@ const highlightedAnswer = computed(() => {
   return '';
 });
 
-// 英文显示逻辑：根据模式、掌握状态和是否显示答案决定
+// 英文显示逻辑
+// 小白模式：始终显示英文答案
+// 进阶模式：默认隐藏英文，只有showAnswer或手动触发时才显示
 const showEnglish = computed(() => {
-  // 如果手动显示了答案，始终显示
+  // 手动显示答案时，始终显示
   if (showAnswer.value) {
     return true;
   }
 
-  // 小白模式下，根据掌握状态决定
+  // 小白模式：始终显示英文
   if (learningStore.isBeginnerMode) {
-    // 使用当前页面实际显示的单词ID来判断，而不是store的currentWord
-    // 这样可以确保每个单词独立判断，不会影响其他单词
-    const wordId = currentWord.value?.id;
-    if (!wordId) {
-      return false;
-    }
-    // 如果当前单词已掌握，则隐藏英文
-    return !learningStore.masteredWords.includes(wordId);
+    return true;
   }
 
-  // 其他模式下，不显示英文（需要听写）
+  // 进阶模式：隐藏英文，需要通过按钮/快捷键查看
   return false;
 });
 
