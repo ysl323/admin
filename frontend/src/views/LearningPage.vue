@@ -174,7 +174,7 @@
               播放发音
             </el-button>
 
-            <el-button type="success" :loading="isChecking" @click="handleSubmit">
+            <el-button type="success" :loading="isChecking" @click="wordParts.length > 1 ? handleMultiWordSubmit() : handleSubmit()">
               <el-icon><CircleCheckFilled /></el-icon>
               提交
             </el-button>
