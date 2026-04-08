@@ -50,6 +50,13 @@ class UserSettingsService {
   };
 
   /**
+   * 默认功能设置
+   */
+  static DEFAULT_FEATURES = {
+    showAnswerWhenHolding: true  // 默认启用按住显示答案功能
+  };
+
+  /**
    * 从本地存储加载设置
    * @returns {Object} 用户设置
    */
@@ -63,13 +70,18 @@ class UserSettingsService {
           ...UserSettingsService.DEFAULT_SHORTCUTS,
           ...(settings.shortcuts || {})
         };
+        // 合并默认功能设置
+        if (settings.showAnswerWhenHolding === undefined) {
+          settings.showAnswerWhenHolding = UserSettingsService.DEFAULT_FEATURES.showAnswerWhenHolding;
+        }
         return settings;
       }
     } catch (error) {
       console.error('Failed to load settings from local:', error);
     }
     return {
-      shortcuts: { ...UserSettingsService.DEFAULT_SHORTCUTS }
+      shortcuts: { ...UserSettingsService.DEFAULT_SHORTCUTS },
+      showAnswerWhenHolding: UserSettingsService.DEFAULT_FEATURES.showAnswerWhenHolding
     };
   }
 
@@ -107,16 +119,21 @@ class UserSettingsService {
     try {
       const serverSettings = await this.getSettings();
       const localSettings = this.loadFromLocal();
-      
+
       // 服务器设置优先，但合并本地可能缺失的默认值
       const mergedSettings = {
         shortcuts: {
           ...UserSettingsService.DEFAULT_SHORTCUTS,
           ...(localSettings.shortcuts || {}),
           ...(serverSettings.shortcuts || {})
-        }
+        },
+        showAnswerWhenHolding: serverSettings.showAnswerWhenHolding !== undefined
+          ? serverSettings.showAnswerWhenHolding
+          : (localSettings.showAnswerWhenHolding !== undefined
+            ? localSettings.showAnswerWhenHolding
+            : UserSettingsService.DEFAULT_FEATURES.showAnswerWhenHolding)
       };
-      
+
       this.saveToLocal(mergedSettings);
       return mergedSettings;
     } catch (error) {

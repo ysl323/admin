@@ -347,6 +347,10 @@ const settings = reactive({
 const editingShortcut = ref(null);
 const pressedKeys = ref([]);
 
+// 按住快捷键显示答案相关
+const showAnswerWhenHolding = ref(false);
+const isShortcutKeyPressed = ref(false);
+
 // 处理显示模式切换（小白/进阶）
 const handleDisplayModeChange = async (newDisplayMode) => {
   try {
@@ -467,6 +471,7 @@ onMounted(async () => {
 
   // 添加全局键盘监听
   window.addEventListener('keydown', handleGlobalKeydown);
+  window.addEventListener('keyup', handleGlobalKeyup);
 
   await loadWords();
   if (words.value.length > 0) {
@@ -495,6 +500,7 @@ onUnmounted(() => {
   AudioManager.stop();
   // 移除键盘监听
   window.removeEventListener('keydown', handleGlobalKeydown);
+  window.removeEventListener('keyup', handleGlobalKeyup);
   // 移除事件监听
   eventBus.off('openSettings', openSettings);
   if (window.visualViewport && window._viewportHandler) {
@@ -1135,16 +1141,19 @@ const handlePlayAudio = () => {
 
 // 显示答案
 const handleShowAnswer = () => {
-  showAnswer.value = true;
-  feedback.value = {
-    show: true,
-    type: 'wrong',
-    message: '查看答案'
-  };
+  // 只在非按住模式下显示答案
+  if (!isShortcutKeyPressed.value && !showAnswerWhenHolding.value) {
+    showAnswer.value = true;
+    feedback.value = {
+      show: true,
+      type: 'wrong',
+      message: '查看答案'
+    };
 
-  setTimeout(() => {
-    feedback.value.show = false;
-  }, 2000);
+    setTimeout(() => {
+      feedback.value.show = false;
+    }, 2000);
+  }
 };
 
 // 重新本题
@@ -1261,6 +1270,9 @@ const loadUserSettings = async () => {
     const loadedSettings = await userSettingsService.syncFromServer();
     Object.assign(settings, loadedSettings);
     console.log('User settings loaded:', settings);
+    
+    // 加载按住显示答案功能设置
+    showAnswerWhenHolding.value = loadedSettings.showAnswerWhenHolding !== false;
   } catch (error) {
     console.error('Failed to load user settings:', error);
   }
@@ -1310,14 +1322,79 @@ const handleGlobalKeydown = (event) => {
   // 调试信息
   console.log('按键检测:', pressedKey);
 
-  // 检查是否匹配快捷键
+  // 检查是否匹配 showAnswer 快捷键（按住显示答案功能）
+  const showAnswerShortcut = settings.shortcuts?.showAnswer;
+  if (showAnswerShortcut?.keys && arraysEqual(showAnswerShortcut.keys, pressedKey)) {
+    console.log('按住显示答案');
+    event.preventDefault();
+    isShortcutKeyPressed.value = true;
+    // 如果启用了按住显示答案功能，则启用按住显示
+    if (settings.showAnswerWhenHolding !== false) {
+      showAnswer.value = true;
+      feedback.value.show = false; // 隐藏反馈
+    }
+    return;
+  }
+
+  // 检查是否匹配其他快捷键
   const shortcuts = settings.shortcuts;
   for (const [action, config] of Object.entries(shortcuts)) {
+    if (action === 'showAnswer') continue; // 跳过 showAnswer，已经单独处理
     if (config.keys && arraysEqual(config.keys, pressedKey)) {
       console.log('匹配快捷键:', action, config.keys);
       event.preventDefault();
       executeShortcutAction(action);
       break;
+    }
+  }
+};
+
+// 全局键盘松开监听
+const handleGlobalKeyup = (event) => {
+  // 如果正在编辑快捷键，不处理
+  if (editingShortcut.value) {
+    return;
+  }
+
+  // 如果焦点在输入框，不处理
+  const activeElement = document.activeElement;
+  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+    return;
+  }
+
+  // 获取松开的键
+  const pressedKey = [];
+  if (event.altKey) pressedKey.push('Alt');
+  if (event.ctrlKey) pressedKey.push('Ctrl');
+  if (event.shiftKey) pressedKey.push('Shift');
+  if (event.metaKey) pressedKey.push('Meta');
+
+  // 添加主键（排除修饰键）
+  const mainKey = event.key;
+  if (!['Alt', 'Control', 'Shift', 'Meta'].includes(mainKey)) {
+    // 特殊键名映射
+    const keyMap = {
+      'ArrowLeft': 'Left',
+      'ArrowRight': 'Right',
+      'ArrowUp': 'Up',
+      'ArrowDown': 'Down',
+      ' ': 'Space',
+      'Enter': 'Enter',
+      'Escape': 'Esc'
+    };
+    pressedKey.push(keyMap[mainKey] || mainKey.toUpperCase());
+  }
+
+  // 检查是否是 showAnswer 快捷键松开
+  const showAnswerShortcut = settings.shortcuts?.showAnswer;
+  if (showAnswerShortcut?.keys && arraysEqual(showAnswerShortcut.keys, pressedKey)) {
+    console.log('松开显示答案');
+    if (isShortcutKeyPressed.value) {
+      isShortcutKeyPressed.value = false;
+      // 如果启用了按住显示答案功能，则隐藏答案
+      if (settings.showAnswerWhenHolding !== false) {
+        showAnswer.value = false;
+      }
     }
   }
 };
