@@ -174,6 +174,11 @@
               播放发音
             </el-button>
 
+            <el-button type="success" :loading="isChecking" @click="handleSubmit">
+              <el-icon><CircleCheckFilled /></el-icon>
+              提交
+            </el-button>
+
             <el-button @click="handleShowAnswer">
               <el-icon><View /></el-icon>
               显示答案
