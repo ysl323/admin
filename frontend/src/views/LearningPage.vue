@@ -1141,19 +1141,16 @@ const handlePlayAudio = () => {
 
 // 显示答案
 const handleShowAnswer = () => {
-  // 只在非按住模式下显示答案
-  if (!isShortcutKeyPressed.value && !showAnswerWhenHolding.value) {
-    showAnswer.value = true;
-    feedback.value = {
-      show: true,
-      type: 'wrong',
-      message: '查看答案'
-    };
+  showAnswer.value = true;
+  feedback.value = {
+    show: true,
+    type: 'wrong',
+    message: '查看答案'
+  };
 
-    setTimeout(() => {
-      feedback.value.show = false;
-    }, 2000);
-  }
+  setTimeout(() => {
+    feedback.value.show = false;
+  }, 2000);
 };
 
 // 重新本题
