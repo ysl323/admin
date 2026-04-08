@@ -1328,12 +1328,26 @@ const handleGlobalKeydown = (event) => {
   const showAnswerShortcut = settings.shortcuts?.showAnswer;
   if (showAnswerShortcut?.keys && arraysEqual(showAnswerShortcut.keys, pressedKey)) {
     console.log('按住显示答案');
+
+    // 记录当前焦点的输入框
+    const activeEl = document.activeElement;
+    if (activeEl) {
+      focusedInputIndexBeforeShortcut.value = -1;
+      if (wordParts.value.length > 1) {
+        wordInputRefs.value.forEach((ref, idx) => {
+          if (ref === activeEl) focusedInputIndexBeforeShortcut.value = idx;
+        });
+      } else if (activeEl === answerInputRef.value || (answerInputRef.value && answerInputRef.value.contains(activeEl))) {
+        focusedInputIndexBeforeShortcut.value = 0;
+      }
+      console.log('记录焦点:', focusedInputIndexBeforeShortcut.value);
+    }
+
     event.preventDefault();
     isShortcutKeyPressed.value = true;
-    // 如果启用了按住显示答案功能，则启用按住显示
     if (settings.showAnswerWhenHolding !== false) {
       showAnswer.value = true;
-      feedback.value.show = false; // 隐藏反馈
+      feedback.value.show = false;
     }
     return;
   }
@@ -1387,10 +1401,20 @@ const handleGlobalKeyup = (event) => {
     console.log('松开显示答案');
     if (isShortcutKeyPressed.value) {
       isShortcutKeyPressed.value = false;
-      // 如果启用了按住显示答案功能，则隐藏答案
       if (settings.showAnswerWhenHolding !== false) {
         showAnswer.value = false;
       }
+
+      // 恢复焦点到之前记录的输入框
+      const idx = focusedInputIndexBeforeShortcut.value;
+      console.log('恢复焦点:', idx);
+      nextTick(() => {
+        if (wordParts.value.length > 1 && idx >= 0 && wordInputRefs.value[idx]) {
+          wordInputRefs.value[idx].focus();
+        } else if (wordParts.value.length <= 1 && answerInputRef.value) {
+          answerInputRef.value.focus();
+        }
+      });
     }
   }
 };
