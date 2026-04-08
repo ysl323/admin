@@ -1298,12 +1298,6 @@ const handleGlobalKeydown = (event) => {
     return;
   }
 
-  // 如果焦点在输入框，不处理快捷键
-  const activeElement = document.activeElement;
-  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-    return;
-  }
-
   // 如果正在加载或显示完成对话框，不处理
   if (loading.value || showCompleteDialog.value || showSettingsDialog.value) {
     return;
@@ -1366,12 +1360,6 @@ const handleGlobalKeydown = (event) => {
 const handleGlobalKeyup = (event) => {
   // 如果正在编辑快捷键，不处理
   if (editingShortcut.value) {
-    return;
-  }
-
-  // 如果焦点在输入框，不处理
-  const activeElement = document.activeElement;
-  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
     return;
   }
 
