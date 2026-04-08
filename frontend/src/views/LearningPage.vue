@@ -445,7 +445,7 @@ const highlightedAnswer = computed(() => {
 });
 
 // 英文显示逻辑
-// 小白模式：始终显示英文答案
+// 小白模式：默认显示英文，但已掌握的单词隐藏
 // 进阶模式：默认隐藏英文，只有showAnswer或手动触发时才显示
 const showEnglish = computed(() => {
   // 手动显示答案时，始终显示
@@ -453,9 +453,10 @@ const showEnglish = computed(() => {
     return true;
   }
 
-  // 小白模式：始终显示英文
+  // 小白模式下：未掌握的单词显示英文，已掌握的隐藏
   if (learningStore.isBeginnerMode) {
-    return true;
+    const wordId = currentWord.value?.id;
+    return wordId ? !learningStore.masteredWords.includes(wordId) : true;
   }
 
   // 进阶模式：隐藏英文，需要通过按钮/快捷键查看
