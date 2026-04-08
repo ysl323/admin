@@ -350,6 +350,7 @@ const pressedKeys = ref([]);
 // 按住快捷键显示答案相关
 const showAnswerWhenHolding = ref(false);
 const isShortcutKeyPressed = ref(false);
+const focusedInputIndexBeforeShortcut = ref(-1);
 
 // 处理显示模式切换（小白/进阶）
 const handleDisplayModeChange = async (newDisplayMode) => {
@@ -1329,26 +1330,32 @@ const handleGlobalKeydown = (event) => {
   if (showAnswerShortcut?.keys && arraysEqual(showAnswerShortcut.keys, pressedKey)) {
     console.log('按住显示答案');
 
-    // 记录当前焦点的输入框
-    const activeEl = document.activeElement;
-    if (activeEl) {
-      focusedInputIndexBeforeShortcut.value = -1;
-      if (wordParts.value.length > 1) {
-        wordInputRefs.value.forEach((ref, idx) => {
-          if (ref === activeEl) focusedInputIndexBeforeShortcut.value = idx;
-        });
-      } else if (activeEl === answerInputRef.value || (answerInputRef.value && answerInputRef.value.contains(activeEl))) {
-        focusedInputIndexBeforeShortcut.value = 0;
-      }
-      console.log('记录焦点:', focusedInputIndexBeforeShortcut.value);
-    }
-
+    // 核心逻辑：显示答案（必须最先执行，不能被任何错误阻断）
     event.preventDefault();
     isShortcutKeyPressed.value = true;
     if (settings.showAnswerWhenHolding !== false) {
       showAnswer.value = true;
       feedback.value.show = false;
     }
+
+    // 记录当前焦点的输入框（独立执行，出错不影响上面的逻辑）
+    try {
+      const activeEl = document.activeElement;
+      if (activeEl) {
+        focusedInputIndexBeforeShortcut.value = -1;
+        if (wordParts.value.length > 1) {
+          wordInputRefs.value.forEach((ref, idx) => {
+            if (ref === activeEl) focusedInputIndexBeforeShortcut.value = idx;
+          });
+        } else if (activeEl === answerInputRef.value || (answerInputRef.value && answerInputRef.value.contains(activeEl))) {
+          focusedInputIndexBeforeShortcut.value = 0;
+        }
+        console.log('记录焦点:', focusedInputIndexBeforeShortcut.value);
+      }
+    } catch (e) {
+      console.warn('记录焦点失败:', e);
+    }
+
     return;
   }
 
