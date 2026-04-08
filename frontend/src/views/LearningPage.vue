@@ -658,12 +658,16 @@ const initWordInputs = () => {
 
 // 处理单个单词输入
 const handleSingleWordInput = () => {
+  // 验证并过滤输入，只允许英文字母和标点符号
+  userAnswer.value = validateEnglishInput(userAnswer.value);
   // 播放键盘敲击声音
   playTypingSound();
 };
 
 // 处理单词输入
 const handleWordInput = (index) => {
+  // 验证并过滤输入，只允许英文字母和标点符号
+  wordInputs.value[index] = validateEnglishInput(wordInputs.value[index]);
   // 播放键盘敲击声音
   playTypingSound();
   
@@ -673,6 +677,18 @@ const handleWordInput = (index) => {
   }
   
   // 不需要手动更新placeholder和width，computed属性会自动处理
+};
+
+// 验证英文输入，只允许字母、标点符号和空格
+const validateEnglishInput = (input) => {
+  // 正则表达式：只匹配英文字母、常见标点符号和空格
+  // 匹配：a-z, A-Z, 空格, ! ? . , ; : - ' " 等
+  const englishPattern = /^[a-zA-Z\s\.\?!\,\;:\-'"`]+$/;
+  
+  // 逐个字符验证并过滤
+  return input.split('').filter(char => {
+    return englishPattern.test(char);
+  }).join('');
 };
 
 // 播放键盘敲击声音
